@@ -7,15 +7,41 @@ document.addEventListener('DOMContentLoaded', function() {
     var documentForm = document.getElementById('documentForm');
     var form3Container = document.getElementById('form3Container');
 
-    var currentDocumentIndex = localStorage.getItem('currentDocumentIndex');
-    var documents = JSON.parse(localStorage.getItem('documents')) || [];
-    var currentDocument = currentDocumentIndex !== null ? documents[currentDocumentIndex] : {};
+    let documents = [];
+    let currentDocumentIndex = null;
 
+    // 📌 Funkce pro načtení objednávek ze serveru
+    function loadOrders() {
+        fetch('https://nakupmej.onrender.com/getOrders')
+            .then(response => response.json())
+            .then(data => {
+                documents = data;
+                currentDocumentIndex = localStorage.getItem('currentDocumentIndex');
+                loadFormData();
+            })
+            .catch(error => console.error('Chyba při načítání objednávek:', error));
+    }
+
+    // 📌 Funkce pro uložení objednávek na server
+    function saveOrders() {
+        fetch('https://nakupmej.onrender.com/saveOrders', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ orders: documents })
+        })
+        .catch(error => console.error('Chyba při ukládání objednávek:', error));
+    }
+
+    // 📌 Funkce pro načtení dat formuláře
     function loadFormData() {
-        if (!currentDocument) return;
+        if (currentDocumentIndex === null || !documents[currentDocumentIndex]) return;
+
+        let currentDocument = documents[currentDocumentIndex];
 
         document.getElementById('documentNumber').value = currentDocument.number || '';
-        document.getElementById('supplier').value = currentDocument.supplier || ''; // Předvyplnění pole "Dodavatel"
+        document.getElementById('supplier').value = currentDocument.supplier || ''; 
         
         if (currentDocument.packagingStatus) {
             document.querySelector(`input[name="packagingStatus"][value="${currentDocument.packagingStatus}"]`).checked = true;
@@ -42,10 +68,10 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
 
-        loadForm3();
+        loadForm3(currentDocument);
     }
 
-    function loadForm3() {
+    function loadForm3(currentDocument) {
         var form3HTML = `
             <div class="form-group">
                 <label for="orderNumber">Číslo objednávky</label>
@@ -70,38 +96,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     <label><input type="radio" name="timeliness" value="NOK" ${currentDocument.timeliness === 'NOK' ? 'checked' : ''}> NOK</label>
                 </div>
             </div>
-            <div class="form-group">
-                <label>Kontrola vůči systému (úplnost, cena...)</label>
-                <div>
-                    <label><input type="radio" name="systemCheck" value="1" ${currentDocument.systemCheck === '1' ? 'checked' : ''}> 1</label>
-                    <label><input type="radio" name="systemCheck" value="2" ${currentDocument.systemCheck === '2' ? 'checked' : ''}> 2</label>
-                </div>
-            </div>
-            <div class="form-group">
-                <label>Komunikace s dodavatelem</label>
-                <div>
-                    <label><input type="radio" name="communication" value="1" ${currentDocument.communication === '1' ? 'checked' : ''}> 1</label>
-                    <label><input type="radio" name="communication" value="2" ${currentDocument.communication === '2' ? 'checked' : ''}> 2</label>
-                </div>
-            </div>
-            <div class="form-group">
-                <label>Druh zboží</label>
-                <div>
-                    <label><input type="checkbox" name="goodsType" value="Výrobní" ${currentDocument.goodsType && currentDocument.goodsType.includes('Výrobní') ? 'checked' : ''}> Výrobní</label>
-                    <label><input type="checkbox" name="goodsType" value="Ostatní" ${currentDocument.goodsType && currentDocument.goodsType.includes('Ostatní') ? 'checked' : ''}> Ostatní</label>
-                </div>
-            </div>
-            <div class="form-group">
-                <label for="note">Poznámka</label>
-                <textarea id="note" name="note">${currentDocument.note || ''}</textarea>
-            </div>
-            <div class="form-group">
-                <label>Vstupní kontrola</label>
-                <div>
-                    <label><input type="radio" name="entryControl" value="Ano" ${currentDocument.entryControl === 'Ano' ? 'checked' : ''}> Ano</label>
-                    <label><input type="radio" name="entryControl" value="Ne" ${currentDocument.entryControl === 'Ne' ? 'checked' : ''}> Ne</label>
-                </div>
-            </div>
         `;
 
         form3Container.innerHTML = form3HTML;
@@ -118,6 +112,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     fileUpload.addEventListener('change', function(event) {
+        if (currentDocumentIndex === null) return;
+        let currentDocument = documents[currentDocumentIndex];
+
         var files = Array.from(event.target.files);
         files.forEach(function(file) {
             var reader = new FileReader();
@@ -128,17 +125,17 @@ document.addEventListener('DOMContentLoaded', function() {
                     currentDocument.files = [];
                 }
                 currentDocument.files.push({ name: file.name, content: fileContent });
+                saveOrders(); // 📌 Uložit soubory na server
             };
             reader.readAsDataURL(file); 
         });
     });
 
-    if (currentDocumentIndex !== null) {
-        loadFormData();
-    }
-
     saveButton.addEventListener('click', function(event) {
         event.preventDefault();
+
+        if (currentDocumentIndex === null) return;
+        let currentDocument = documents[currentDocumentIndex];
 
         var documentData = {
             number: document.getElementById('documentNumber').value,
@@ -154,15 +151,9 @@ document.addEventListener('DOMContentLoaded', function() {
             files: currentDocument.files || []
         };
 
-        if (currentDocumentIndex !== null) {
-            documents[currentDocumentIndex] = { ...documents[currentDocumentIndex], ...documentData };
-        } else {
-            documents.push(documentData);
-        }
+        documents[currentDocumentIndex] = { ...documents[currentDocumentIndex], ...documentData };
 
-        localStorage.setItem('documents', JSON.stringify(documents));
-        localStorage.removeItem('currentDocumentIndex'); 
-
+        saveOrders(); // 📌 Uložit na server
         window.location.href = 'Strana1.html';
     });
 
@@ -170,4 +161,6 @@ document.addEventListener('DOMContentLoaded', function() {
         localStorage.removeItem('currentDocumentIndex');
         window.location.href = 'Strana1.html';
     });
+
+    loadOrders(); // 📌 Načtení objednávek při načtení stránky
 });
