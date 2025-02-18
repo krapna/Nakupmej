@@ -6,21 +6,9 @@ document.addEventListener('DOMContentLoaded', function() {
     var fileList = document.getElementById('fileList');
     
     var form2Container = document.getElementById('form2Container');
-   let currentDocumentIndex = parseInt(localStorage.getItem('currentDocumentIndex'), 10);
-let documents = [];
-
-function loadOrders() {
-    fetch('/getOrders')
-        .then(response => response.json())
-        .then(data => {
-            documents = data;
-            currentDocument = (currentDocumentIndex !== null && !isNaN(currentDocumentIndex)) ? documents[currentDocumentIndex] : null;
-            loadFormData();
-        });
-}
-
-loadOrders();
-documents[currentDocumentIndex] : null;
+    var currentDocumentIndex = parseInt(localStorage.getItem('currentDocumentIndex'), 10);
+    var documents = JSON.parse(localStorage.getItem('documents')) || [];
+    var currentDocument = (currentDocumentIndex !== null && !isNaN(currentDocumentIndex)) ? documents[currentDocumentIndex] : null;
 
     function loadFormData() {
         if (!currentDocument) return;
@@ -103,8 +91,8 @@ documents[currentDocumentIndex] : null;
         loadFormData();
     }
 
-  saveButton.addEventListener('click', function(event) {
-    event.preventDefault();
+    saveButton.addEventListener('click', function(event) {
+        event.preventDefault();
 
         var entryControlValue = document.querySelector('input[name="entryControl"]:checked')?.value;
 
@@ -143,17 +131,8 @@ documents[currentDocumentIndex] : null;
             documents[currentDocumentIndex].borderColor = 'green';
         }
 
-        saveOrders();
-    localStorage.removeItem('currentDocumentIndex');
-    window.location.href = 'Strana1.html';
-    function saveOrders() {
-    fetch('/saveOrders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orders: documents })
-    });
-}
-
+        localStorage.setItem('documents', JSON.stringify(documents));
+        localStorage.removeItem('currentDocumentIndex');
 
         window.location.href = 'Strana1.html';
     });

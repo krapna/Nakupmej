@@ -4,20 +4,9 @@ document.addEventListener('DOMContentLoaded', function() {
     var supplierInput = document.getElementById('supplier'); // Dodavatel input
     var documentNumberInput = document.getElementById('documentNumber'); // Číslo dokumentu input
 
-    let currentDocumentIndex = localStorage.getItem('currentDocumentIndex');
-let documents = [];
-
-function loadOrders() {
-    fetch('/getOrders')
-        .then(response => response.json())
-        .then(data => {
-            documents = data;
-            currentDocument = currentDocumentIndex !== null ? documents[currentDocumentIndex] : {};
-            loadFormData();
-        });
-}
-
-loadOrders();
+    var currentDocumentIndex = localStorage.getItem('currentDocumentIndex');
+    var documents = JSON.parse(localStorage.getItem('documents')) || [];
+    var currentDocument = currentDocumentIndex !== null ? documents[currentDocumentIndex] : {};
 
     // Load existing form data
     function loadFormData() {
@@ -58,8 +47,8 @@ loadOrders();
         loadFormData();
     }
 
-saveButton.addEventListener('click', function(event) {
-    event.preventDefault();
+    saveButton.addEventListener('click', function(event) {
+        event.preventDefault();
 
         var inspectionData = {
             number: documentNumberInput.value, // Uložení čísla dokumentu
@@ -80,16 +69,9 @@ saveButton.addEventListener('click', function(event) {
             documents[currentDocumentIndex].borderColor = 'green'; // Změna barvy dokumentu na zelenou
         }
 
-        saveOrders();
-    localStorage.removeItem('currentDocumentIndex');
-    window.location.href = 'Strana1.html';
-function saveOrders() {
-    fetch('/saveOrders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orders: documents })
-    });
-}
+        localStorage.setItem('documents', JSON.stringify(documents));
+        localStorage.removeItem('currentDocumentIndex');
+
         window.location.href = 'Strana1.html';
     });
 

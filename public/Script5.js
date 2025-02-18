@@ -5,22 +5,9 @@ document.addEventListener('DOMContentLoaded', function () {
     var orderNumberInput = document.getElementById('orderNumber');
     var displayFormsDiv = document.createElement('div'); // Div pro zobrazení formulářů
 
-    let currentDocumentIndex = parseInt(localStorage.getItem('currentDocumentIndex'), 10);
-let documents = [];
-let currentDocument = null;
-
-function loadOrders() {
-    fetch('/getOrders')
-        .then(response => response.json())
-        .then(data => {
-            documents = data;
-            currentDocument = (currentDocumentIndex !== null && !isNaN(currentDocumentIndex)) ? documents[currentDocumentIndex] : null;
-            displayFilledForms();
-        });
-}
-
-loadOrders();
-
+    var currentDocumentIndex = parseInt(localStorage.getItem('currentDocumentIndex'), 10);
+    var documents = JSON.parse(localStorage.getItem('documents')) || [];
+    var currentDocument = (currentDocumentIndex !== null && !isNaN(currentDocumentIndex)) ? documents[currentDocumentIndex] : null;
 
     function displayFilledForms() {
         displayFormsDiv.innerHTML = '';
@@ -92,48 +79,47 @@ loadOrders();
     });
 
     confirmButton.addEventListener('click', function (event) {
-    event.preventDefault();
+        event.preventDefault();
 
-    if (!currentDocument) {
-        alert('Chyba: Žádná data k exportu.');
-        return;
-    }
+        if (!currentDocument) {
+            alert('Chyba: Žádná data k exportu.');
+            return;
+        }
 
-    var orderNumber = orderNumberInput.value.trim();
-    if (!orderNumber) {
-        alert('Chyba: Číslo objednávky není vyplněno.');
-        return;
-    }
+        var orderNumber = orderNumberInput.value.trim();
+        if (!orderNumber) {
+            alert('Chyba: Číslo objednávky není vyplněno.');
+            return;
+        }
 
-    var attachments = currentDocument.files ? currentDocument.files.map(file => ({
-        filename: file.name,
-        content: file.content.split("base64,")[1]
-    })) : [];
+        var attachments = currentDocument.files ? currentDocument.files.map(file => ({
+            filename: file.name,
+            content: file.content.split("base64,")[1]
+        })) : [];
 
-    fetch('/generateZip', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ filledData: displayFormsDiv.innerText, attachments, orderNumber })
-    })
-        .then(response => response.blob())
-        .then(blob => {
-            var url = window.URL.createObjectURL(blob);
-            var a = document.createElement('a');
-            a.href = url;
-            a.download = orderNumber + '.zip';
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url);
-            alert('ZIP soubor byl úspěšně stažen jako ' + orderNumber + '.zip');
+        fetch('https://nakupmej.onrender.com/generateZip', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ filledData: displayFormsDiv.innerText, attachments, orderNumber })
         })
-        .catch(error => {
-            console.error('Chyba při generování ZIP souboru:', error);
-            alert('Došlo k chybě při generování ZIP souboru.');
-        });
-});
-
+            .then(response => response.blob())
+            .then(blob => {
+                var url = window.URL.createObjectURL(blob);
+                var a = document.createElement('a');
+                a.href = url;
+                a.download = orderNumber + '.zip';
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                alert('ZIP soubor byl úspěšně stažen jako ' + orderNumber + '.zip');
+            })
+            .catch(error => {
+                console.error('Chyba při generování ZIP souboru:', error);
+                alert('Došlo k chybě při generování ZIP souboru.');
+            });
+    });
 
     endButton.addEventListener('click', function () {
         window.location.href = 'Strana1.html';

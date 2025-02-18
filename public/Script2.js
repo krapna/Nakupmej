@@ -7,21 +7,9 @@ document.addEventListener('DOMContentLoaded', function() {
     var documentForm = document.getElementById('documentForm');
     var form3Container = document.getElementById('form3Container');
 
-let currentDocumentIndex = localStorage.getItem('currentDocumentIndex');
-let documents = [];
-
-function loadOrders() {
-    fetch('/getOrders')
-        .then(response => response.json())
-        .then(data => {
-            documents = data;
-            currentDocument = currentDocumentIndex !== null ? documents[currentDocumentIndex] : {};
-            loadFormData();
-        });
-}
-
-loadOrders();
-
+    var currentDocumentIndex = localStorage.getItem('currentDocumentIndex');
+    var documents = JSON.parse(localStorage.getItem('documents')) || [];
+    var currentDocument = currentDocumentIndex !== null ? documents[currentDocumentIndex] : {};
 
     function loadFormData() {
         if (!currentDocument) return;
@@ -150,7 +138,7 @@ loadOrders();
     }
 
     saveButton.addEventListener('click', function(event) {
-    event.preventDefault();
+        event.preventDefault();
 
         var documentData = {
             number: document.getElementById('documentNumber').value,
@@ -172,18 +160,9 @@ loadOrders();
             documents.push(documentData);
         }
 
-        saveOrders();
-    localStorage.removeItem('currentDocumentIndex');
-    window.location.href = 'Strana1.html';
-});
+        localStorage.setItem('documents', JSON.stringify(documents));
+        localStorage.removeItem('currentDocumentIndex'); 
 
-function saveOrders() {
-    fetch('/saveOrders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orders: documents })
-    });
-}
         window.location.href = 'Strana1.html';
     });
 

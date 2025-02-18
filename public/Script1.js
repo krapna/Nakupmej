@@ -23,16 +23,10 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-let documents = [];
-
-function loadOrders() {
-    fetch('/getOrders')
-        .then(response => response.json())
-        .then(data => {
-            documents = data;
-            ordersDiv.innerHTML = ''; // Clear existing orders
-            documents.forEach(function(doc, index) {
-
+    function loadOrders() {
+        var documents = JSON.parse(localStorage.getItem('documents')) || [];
+        ordersDiv.innerHTML = ''; // Clear existing orders
+        documents.forEach(function(doc, index) {
             var orderDiv = document.createElement('div');
             orderDiv.className = 'order';
             orderDiv.textContent = `Dokument: ${doc.number}`;
@@ -80,11 +74,10 @@ function loadOrders() {
             var deleteBtn = document.createElement('button');
             deleteBtn.textContent = 'Odstranit';
             deleteBtn.addEventListener('click', function() {
-    documents.splice(index, 1);
-    saveOrders();
-    loadOrders();
-});
-
+                documents.splice(index, 1);
+                localStorage.setItem('documents', JSON.stringify(documents));
+                loadOrders();
+            });
 
             orderDiv.appendChild(deleteBtn); // Přidáme tlačítko Odstranit až na konec
 
@@ -93,13 +86,4 @@ function loadOrders() {
     }
 
     loadOrders();
-
-function saveOrders() {
-    fetch('/saveOrders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orders: documents })
-    });
-}
-
 });
