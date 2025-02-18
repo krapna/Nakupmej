@@ -97,7 +97,7 @@ document.addEventListener('DOMContentLoaded', function () {
             content: file.content.split("base64,")[1]
         })) : [];
 
-        fetch('http://localhost:3000/generateZip', {
+        fetch('https://nakupmej.onrender.com/generateZip', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
