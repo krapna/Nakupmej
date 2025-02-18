@@ -1,17 +1,42 @@
 document.addEventListener('DOMContentLoaded', function() {
     var saveButton = document.getElementById('saveBtn');
     var endButton = document.getElementById('endBtn');
-    
     var fileUpload = document.getElementById('fileUpload');
     var fileList = document.getElementById('fileList');
-    
     var form2Container = document.getElementById('form2Container');
-    var currentDocumentIndex = parseInt(localStorage.getItem('currentDocumentIndex'), 10);
-    var documents = JSON.parse(localStorage.getItem('documents')) || [];
-    var currentDocument = (currentDocumentIndex !== null && !isNaN(currentDocumentIndex)) ? documents[currentDocumentIndex] : null;
 
+    let documents = [];
+    let currentDocumentIndex = null;
+
+    // 📌 Funkce pro načtení objednávek ze serveru
+    function loadOrders() {
+        fetch('https://nakupmej.onrender.com/getOrders')
+            .then(response => response.json())
+            .then(data => {
+                documents = data;
+                currentDocumentIndex = localStorage.getItem('currentDocumentIndex');
+                loadFormData();
+            })
+            .catch(error => console.error('Chyba při načítání objednávek:', error));
+    }
+
+    // 📌 Funkce pro uložení objednávek na server
+    function saveOrders() {
+        fetch('https://nakupmej.onrender.com/saveOrders', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ orders: documents })
+        })
+        .catch(error => console.error('Chyba při ukládání objednávek:', error));
+    }
+
+    // 📌 Funkce pro načtení dat formuláře
     function loadFormData() {
-        if (!currentDocument) return;
+        if (currentDocumentIndex === null || !documents[currentDocumentIndex]) return;
+
+        let currentDocument = documents[currentDocumentIndex];
 
         var form2HTML = `
             <div class="form-group">
@@ -25,7 +50,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('supplier').value = currentDocument.supplier || ''; 
         document.getElementById('confirmedDeliveryDate').value = currentDocument.confirmedDeliveryDate || '';
         document.getElementById('deliveryDate').value = currentDocument.deliveryDate || '';
-        document.getElementById('price').value = currentDocument.price || ''; 
+        document.getElementById('price').value = currentDocument.price || '';
 
         if (currentDocument.timeliness) {
             document.querySelector(`input[name="timeliness"][value="${currentDocument.timeliness}"]`).checked = true;
@@ -66,6 +91,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     fileUpload.addEventListener('change', function(event) {
+        if (currentDocumentIndex === null) return;
+        let currentDocument = documents[currentDocumentIndex];
+
         var files = Array.from(event.target.files);
         var documentNumber = document.getElementById('documentNumber').value;
 
@@ -74,7 +102,6 @@ document.addEventListener('DOMContentLoaded', function() {
             reader.onload = function(e) {
                 var fileContent = e.target.result;
 
-                // Automatické přejmenování souboru podle čísla dokumentu
                 var fileName = documentNumber ? `${documentNumber}_${file.name}` : file.name;
 
                 addFileToList(fileName, fileContent);
@@ -82,17 +109,18 @@ document.addEventListener('DOMContentLoaded', function() {
                     currentDocument.files = [];
                 }
                 currentDocument.files.push({ name: fileName, content: fileContent });
+
+                saveOrders(); // 📌 Uložit soubory na server
             };
             reader.readAsDataURL(file); 
         });
     });
 
-    if (currentDocument) {
-        loadFormData();
-    }
-
     saveButton.addEventListener('click', function(event) {
         event.preventDefault();
+
+        if (currentDocumentIndex === null) return;
+        let currentDocument = documents[currentDocumentIndex];
 
         var entryControlValue = document.querySelector('input[name="entryControl"]:checked')?.value;
 
@@ -114,15 +142,10 @@ document.addEventListener('DOMContentLoaded', function() {
             goodsType: Array.from(document.querySelectorAll('input[name="goodsType"]:checked')).map(el => el.value),
             note: document.getElementById('note').value,
             number: document.getElementById('documentNumber').value,
-            files: currentDocument.files || []  // Uložení souborů
+            files: currentDocument.files || []
         };
 
-        if (currentDocumentIndex !== null && !isNaN(currentDocumentIndex)) {
-            documents[currentDocumentIndex] = { ...documents[currentDocumentIndex], ...orderData };
-        } else {
-            documents.push(orderData);
-            currentDocumentIndex = documents.length - 1; 
-        }
+        documents[currentDocumentIndex] = { ...documents[currentDocumentIndex], ...orderData };
 
         if (entryControlValue === 'Ano') {
             documents[currentDocumentIndex].borderColor = 'orange';
@@ -131,7 +154,7 @@ document.addEventListener('DOMContentLoaded', function() {
             documents[currentDocumentIndex].borderColor = 'green';
         }
 
-        localStorage.setItem('documents', JSON.stringify(documents));
+        saveOrders(); // 📌 Uložit na server
         localStorage.removeItem('currentDocumentIndex');
 
         window.location.href = 'Strana1.html';
@@ -141,4 +164,6 @@ document.addEventListener('DOMContentLoaded', function() {
         localStorage.removeItem('currentDocumentIndex');
         window.location.href = 'Strana1.html';
     });
+
+    loadOrders(); // 📌 Načtení objednávek při načtení stránky
 });
