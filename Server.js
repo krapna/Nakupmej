@@ -6,12 +6,18 @@ const PDFDocument = require('pdfkit');
 const archiver = require('archiver');
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 app.use(bodyParser.json({ limit: '200mb' }));
 app.use(bodyParser.urlencoded({ limit: '200mb', extended: true }));
 
-app.use(express.static(__dirname));
+// 📌 Správné poskytování statických souborů
+app.use(express.static(path.join(__dirname, 'public')));
+
+// 📌 Oprava chybějící závorky u app.get('/')
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'Strana0.html'));
+}); // <-- TADY BYLA CHYBA!
 
 app.post('/generateZip', async (req, res) => {
     const { filledData, attachments, orderNumber } = req.body;
@@ -26,7 +32,7 @@ app.post('/generateZip', async (req, res) => {
             fs.mkdirSync(tempFolder);
         }
 
-        const fileName = orderNumber ? orderNumber : 'Dokument'; // Pokud není číslo objednávky, použije se "Dokument"
+        const fileName = orderNumber ? orderNumber : 'Dokument';
 
         // **Vytvoření PDF souboru**
         const pdfPath = path.join(tempFolder, `${fileName}.pdf`);
@@ -78,6 +84,7 @@ app.post('/generateZip', async (req, res) => {
     }
 });
 
+// 📌 Server správně naslouchá na daném portu
 app.listen(PORT, () => {
     console.log(`Server běží na http://localhost:${PORT}`);
 });
