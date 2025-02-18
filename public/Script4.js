@@ -4,38 +4,54 @@ document.addEventListener('DOMContentLoaded', function() {
     var supplierInput = document.getElementById('supplier'); // Dodavatel input
     var documentNumberInput = document.getElementById('documentNumber'); // Číslo dokumentu input
 
-    var currentDocumentIndex = localStorage.getItem('currentDocumentIndex');
-    var documents = JSON.parse(localStorage.getItem('documents')) || [];
-    var currentDocument = currentDocumentIndex !== null ? documents[currentDocumentIndex] : {};
+    let documents = [];
+    let currentDocumentIndex = null;
 
-    // Load existing form data
+    // 📌 Funkce pro načtení objednávek ze serveru
+    function loadOrders() {
+        fetch('https://nakupmej.onrender.com/getOrders')
+            .then(response => response.json())
+            .then(data => {
+                documents = data;
+                currentDocumentIndex = localStorage.getItem('currentDocumentIndex');
+                loadFormData();
+            })
+            .catch(error => console.error('Chyba při načítání objednávek:', error));
+    }
+
+    // 📌 Funkce pro uložení objednávek na server
+    function saveOrders() {
+        fetch('https://nakupmej.onrender.com/saveOrders', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ orders: documents })
+        })
+        .catch(error => console.error('Chyba při ukládání objednávek:', error));
+    }
+
+    // 📌 Funkce pro načtení dat formuláře
     function loadFormData() {
-        if (!currentDocument) return;
+        if (currentDocumentIndex === null || !documents[currentDocumentIndex]) return;
+
+        let currentDocument = documents[currentDocumentIndex];
 
         // Předvyplnění čísla dokumentu a dodavatele
-        documentNumberInput.value = currentDocument.number || ''; // Načtení čísla dokumentu
-        supplierInput.value = currentDocument.supplier || ''; // Načtení dodavatele
+        documentNumberInput.value = currentDocument.number || ''; 
+        supplierInput.value = currentDocument.supplier || ''; 
 
-        // Kontrola, zda prvek existuje, než nastavíme jeho vlastnost 'checked'
-        var physicalInput = document.querySelector(`input[name="physical"][value="${currentDocument.physical || ''}"]`);
-        if (physicalInput) {
-            physicalInput.checked = true;
+        function setChecked(name, value) {
+            var input = document.querySelector(`input[name="${name}"][value="${value || ''}"]`);
+            if (input) {
+                input.checked = true;
+            }
         }
 
-        var chemicalInput = document.querySelector(`input[name="chemical"][value="${currentDocument.chemical || ''}"]`);
-        if (chemicalInput) {
-            chemicalInput.checked = true;
-        }
-
-        var materialInput = document.querySelector(`input[name="material"][value="${currentDocument.material || ''}"]`);
-        if (materialInput) {
-            materialInput.checked = true;
-        }
-
-        var documentationInput = document.querySelector(`input[name="documentation"][value="${currentDocument.documentation || ''}"]`);
-        if (documentationInput) {
-            documentationInput.checked = true;
-        }
+        setChecked("physical", currentDocument.physical);
+        setChecked("chemical", currentDocument.chemical);
+        setChecked("material", currentDocument.material);
+        setChecked("documentation", currentDocument.documentation);
 
         document.getElementById('note').value = currentDocument.note || '';
         document.getElementById('controlBy').value = currentDocument.controlBy || '';
@@ -43,16 +59,15 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('result').value = currentDocument.result || '';
     }
 
-    if (currentDocumentIndex !== null) {
-        loadFormData();
-    }
-
     saveButton.addEventListener('click', function(event) {
         event.preventDefault();
 
+        if (currentDocumentIndex === null) return;
+        let currentDocument = documents[currentDocumentIndex];
+
         var inspectionData = {
-            number: documentNumberInput.value, // Uložení čísla dokumentu
-            supplier: supplierInput.value, // Uložení dodavatele
+            number: documentNumberInput.value, 
+            supplier: supplierInput.value, 
             physical: document.querySelector('input[name="physical"]:checked')?.value,
             chemical: document.querySelector('input[name="chemical"]:checked')?.value,
             material: document.querySelector('input[name="material"]:checked')?.value,
@@ -61,21 +76,22 @@ document.addEventListener('DOMContentLoaded', function() {
             controlBy: document.getElementById('controlBy').value,
             date: document.getElementById('date').value,
             result: document.getElementById('result').value,
-            hasStrana4: true // Přidání označení, že dokument má vyplněnou stranu 4
+            hasStrana4: true 
         };
 
-        if (currentDocumentIndex !== null) {
-            documents[currentDocumentIndex] = { ...documents[currentDocumentIndex], ...inspectionData };
-            documents[currentDocumentIndex].borderColor = 'green'; // Změna barvy dokumentu na zelenou
-        }
+        documents[currentDocumentIndex] = { ...documents[currentDocumentIndex], ...inspectionData };
+        documents[currentDocumentIndex].borderColor = 'green'; 
 
-        localStorage.setItem('documents', JSON.stringify(documents));
+        saveOrders(); // 📌 Uložit na server
         localStorage.removeItem('currentDocumentIndex');
 
         window.location.href = 'Strana1.html';
     });
 
     endButton.addEventListener('click', function() {
+        localStorage.removeItem('currentDocumentIndex');
         window.location.href = 'Strana1.html';
     });
+
+    loadOrders(); // 📌 Načtení objednávek při načtení stránky
 });
