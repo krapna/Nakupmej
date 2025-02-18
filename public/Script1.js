@@ -29,7 +29,7 @@ document.addEventListener('DOMContentLoaded', function() {
         .catch(error => console.error('Chyba při ukládání objednávek:', error));
     }
 
-    // 📌 Funkce pro vykreslení objednávek
+    // 📌 Funkce pro vykreslení objednávek na stránce
     function renderOrders() {
         ordersDiv.innerHTML = ''; // Vymažeme existující objednávky
         documents.forEach(function(doc, index) {
@@ -49,7 +49,7 @@ document.addEventListener('DOMContentLoaded', function() {
             var openPageBtn = document.createElement('button');
             if (doc.borderColor === 'green') {
                 openPageBtn.textContent = 'Strana 5';
-                openPageBtn.style.backgroundColor = '#28a745';
+                openPageBtn.style.backgroundColor = '#28a745'; // Barva tlačítka pro Strana 5
                 openPageBtn.addEventListener('click', function() {
                     localStorage.setItem('currentDocumentIndex', index);
                     window.location.href = 'Strana5.html';
@@ -76,6 +76,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 orderDiv.appendChild(openStrana4Btn);
             }
 
+            // Tlačítko odstranění objednávky
             var deleteBtn = document.createElement('button');
             deleteBtn.textContent = 'Odstranit';
             deleteBtn.addEventListener('click', function() {
@@ -98,6 +99,21 @@ document.addEventListener('DOMContentLoaded', function() {
         documents.push(newDocument);
         saveOrders();
         window.location.href = 'Strana2.html';
+    });
+
+    // 📌 Funkce pro hledání objednávek
+    searchButton.addEventListener('click', function() {
+        var searchValue = packageNumberInput.value.toLowerCase();
+        var orders = document.querySelectorAll('.order');
+
+        orders.forEach(function(order) {
+            var orderText = order.textContent.toLowerCase();
+            if (orderText.includes(searchValue)) {
+                order.style.display = 'block';
+            } else {
+                order.style.display = 'none';
+            }
+        });
     });
 
     loadOrders(); // 📌 Načteme objednávky při načtení stránky
