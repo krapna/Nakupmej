@@ -1,9 +1,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     var saveButton = document.getElementById('saveBtn');
     var endButton = document.getElementById('endBtn');
-    var fileUpload = document.getElementById('fileUpload');
-    var fileList = document.getElementById('fileList');
-    var form2Container = document.getElementById('form2Container');
+    var documentNumberInput = document.getElementById('documentNumber');
 
     let documents = [];
     let currentDocumentIndex = null;
@@ -38,83 +36,33 @@ document.addEventListener('DOMContentLoaded', function() {
 
         let currentDocument = documents[currentDocumentIndex];
 
-        var form2HTML = `
-            <div class="form-group">
-                <h2>Číslo dokumentu</h2>
-                <input type="text" id="documentNumber" name="documentNumber" value="${currentDocument.number || ''}" readonly>
-            </div>
-        `;
-        form2Container.innerHTML = form2HTML;
-
+        documentNumberInput.value = currentDocument.number || ''; 
         document.getElementById('orderNumber').value = currentDocument.orderNumber || '';
         document.getElementById('supplier').value = currentDocument.supplier || ''; 
         document.getElementById('confirmedDeliveryDate').value = currentDocument.confirmedDeliveryDate || '';
         document.getElementById('deliveryDate').value = currentDocument.deliveryDate || '';
         document.getElementById('price').value = currentDocument.price || '';
 
-        if (currentDocument.timeliness) {
-            document.querySelector(`input[name="timeliness"][value="${currentDocument.timeliness}"]`).checked = true;
+        function setChecked(name, value) {
+            var input = document.querySelector(`input[name="${name}"][value="${value || ''}"]`);
+            if (input) {
+                input.checked = true;
+            }
         }
-        if (currentDocument.systemCheck) {
-            document.querySelector(`input[name="systemCheck"][value="${currentDocument.systemCheck}"]`).checked = true;
-        }
-        if (currentDocument.communication) {
-            document.querySelector(`input[name="communication"][value="${currentDocument.communication}"]`).checked = true;
-        }
+
+        setChecked("timeliness", currentDocument.timeliness);
+        setChecked("systemCheck", currentDocument.systemCheck);
+        setChecked("communication", currentDocument.communication);
+
         if (currentDocument.goodsType) {
             currentDocument.goodsType.forEach(function(type) {
                 document.querySelector(`input[name="goodsType"][value="${type}"]`).checked = true;
             });
         }
+
         document.getElementById('note').value = currentDocument.note || '';
-
-        if (currentDocument.entryControl) {
-            document.querySelector(`input[name="entryControl"][value="${currentDocument.entryControl}"]`).checked = true;
-        }
-
-        // Načtení nahraných souborů
-        if (currentDocument.files) {
-            currentDocument.files.forEach(function(file) {
-                addFileToList(file.name, file.content);
-            });
-        }
+        setChecked("entryControl", currentDocument.entryControl);
     }
-
-    function addFileToList(fileName, fileContent) {
-        var fileItem = document.createElement('div');
-        var link = document.createElement('a');
-        link.href = fileContent;
-        link.target = '_blank';
-        link.textContent = fileName;
-        fileItem.appendChild(link);
-        fileList.appendChild(fileItem);
-    }
-
-    fileUpload.addEventListener('change', function(event) {
-        if (currentDocumentIndex === null) return;
-        let currentDocument = documents[currentDocumentIndex];
-
-        var files = Array.from(event.target.files);
-        var documentNumber = document.getElementById('documentNumber').value;
-
-        files.forEach(function(file) {
-            var reader = new FileReader();
-            reader.onload = function(e) {
-                var fileContent = e.target.result;
-
-                var fileName = documentNumber ? `${documentNumber}_${file.name}` : file.name;
-
-                addFileToList(fileName, fileContent);
-                if (!currentDocument.files) {
-                    currentDocument.files = [];
-                }
-                currentDocument.files.push({ name: fileName, content: fileContent });
-
-                saveOrders(); // 📌 Uložit soubory na server
-            };
-            reader.readAsDataURL(file); 
-        });
-    });
 
     saveButton.addEventListener('click', function(event) {
         event.preventDefault();
@@ -131,6 +79,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         var orderData = {
             entryControl: entryControlValue,
+            number: documentNumberInput.value, 
             orderNumber: document.getElementById('orderNumber').value,
             supplier: document.getElementById('supplier').value,
             confirmedDeliveryDate: document.getElementById('confirmedDeliveryDate').value,
@@ -140,9 +89,7 @@ document.addEventListener('DOMContentLoaded', function() {
             systemCheck: document.querySelector('input[name="systemCheck"]:checked')?.value,
             communication: document.querySelector('input[name="communication"]:checked')?.value,
             goodsType: Array.from(document.querySelectorAll('input[name="goodsType"]:checked')).map(el => el.value),
-            note: document.getElementById('note').value,
-            number: document.getElementById('documentNumber').value,
-            files: currentDocument.files || []
+            note: document.getElementById('note').value
         };
 
         documents[currentDocumentIndex] = { ...documents[currentDocumentIndex], ...orderData };
