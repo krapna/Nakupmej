@@ -38,6 +38,32 @@ app.post('/saveOrders', (req, res) => {
     res.json({ success: true });
 });
 
+// 📌 Endpoint pro synchronizaci dat mezi `localStorage` a serverem
+app.post('/syncOrders', (req, res) => {
+    try {
+        const { localOrders } = req.body;
+        let serverOrders = [];
+
+        if (fs.existsSync(DATA_FILE)) {
+            serverOrders = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
+        }
+
+        // 📌 Sloučení a odstranění duplicit podle čísla objednávky
+        const mergedOrders = [...serverOrders, ...localOrders].reduce((acc, order) => {
+            if (!acc.find(o => o.number === order.number)) {
+                acc.push(order);
+            }
+            return acc;
+        }, []);
+
+        fs.writeFileSync(DATA_FILE, JSON.stringify(mergedOrders, null, 2), 'utf8');
+        res.json({ success: true, mergedOrders });
+    } catch (error) {
+        console.error('Chyba při synchronizaci objednávek:', error);
+        res.status(500).json({ error: 'Chyba při synchronizaci' });
+    }
+});
+
 // 📌 Endpoint pro generování ZIP souboru
 app.post('/generateZip', async (req, res) => {
     const { filledData, attachments, orderNumber } = req.body;
