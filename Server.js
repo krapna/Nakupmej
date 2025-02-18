@@ -1,113 +1,110 @@
 const express = require('express');
+const bodyParser = require('body-parser');
 const fs = require('fs');
 const path = require('path');
-const cors = require('cors');
-const bodyParser = require('body-parser');
+const PDFDocument = require('pdfkit');
 const archiver = require('archiver');
 
 const app = express();
-const PORT = process.env.PORT || 10000;
+const PORT = process.env.PORT || 3000;
+
+app.use(bodyParser.json({ limit: '200mb' }));
+app.use(bodyParser.urlencoded({ limit: '200mb', extended: true }));
+
+// 📌 Poskytování statických souborů (HTML, CSS, JS)
+app.use(express.static(path.join(__dirname, 'public')));
+
+// 📌 Oprava přesměrování na hlavní stránku
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'Strana0.html'));
+});
+
+// 📌 Cesta k souboru pro ukládání objednávek
 const DATA_FILE = path.join(__dirname, 'orders.json');
 
-app.use(cors());
-app.use(bodyParser.json());
-app.use(express.static('public'));
-
-// 📌 Zajištění souboru pro ukládání objednávek
-if (!fs.existsSync(DATA_FILE)) {
-    fs.writeFileSync(DATA_FILE, JSON.stringify([], null, 2), 'utf8');
-}
-
-// 📌 Endpoint pro získání uložených objednávek
+// 📌 Načítání objednávek (pro všechna zařízení)
 app.get('/getOrders', (req, res) => {
-    try {
-        const orders = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
-        res.json(orders);
-    } catch (error) {
-        console.error('Chyba při čtení orders.json:', error);
-        res.status(500).json({ error: 'Chyba při načítání objednávek' });
+    if (!fs.existsSync(DATA_FILE)) {
+        return res.json([]);
     }
+    const data = fs.readFileSync(DATA_FILE, 'utf8');
+    res.json(JSON.parse(data));
 });
 
-// 📌 Endpoint pro uložení objednávek na server
+// 📌 Ukládání objednávek (sdílení mezi zařízeními)
 app.post('/saveOrders', (req, res) => {
-    try {
-        const { orders } = req.body;
-        fs.writeFileSync(DATA_FILE, JSON.stringify(orders, null, 2), 'utf8');
-        res.json({ success: true });
-    } catch (error) {
-        console.error('Chyba při ukládání objednávek:', error);
-        res.status(500).json({ error: 'Chyba při ukládání objednávek' });
-    }
-});
-
-// 📌 Endpoint pro synchronizaci `localStorage` s online verzí
-app.post('/syncOrders', (req, res) => {
-    try {
-        const { localOrders } = req.body;
-        const serverOrders = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
-
-        // Sloučení a odstranění duplicit
-        const mergedOrders = [...serverOrders, ...localOrders];
-        const uniqueOrders = mergedOrders.reduce((acc, order) => {
-            if (!acc.find(o => o.number === order.number)) {
-                acc.push(order);
-            }
-            return acc;
-        }, []);
-
-        fs.writeFileSync(DATA_FILE, JSON.stringify(uniqueOrders, null, 2), 'utf8');
-        res.json({ success: true, mergedOrders: uniqueOrders });
-    } catch (error) {
-        console.error('Chyba při synchronizaci objednávek:', error);
-        res.status(500).json({ error: 'Chyba při synchronizaci' });
-    }
+    const { orders } = req.body;
+    fs.writeFileSync(DATA_FILE, JSON.stringify(orders, null, 2), 'utf8');
+    res.json({ success: true });
 });
 
 // 📌 Endpoint pro generování ZIP souboru
-app.post('/generateZip', (req, res) => {
+app.post('/generateZip', async (req, res) => {
+    const { filledData, attachments, orderNumber } = req.body;
+
     try {
-        const { filledData, attachments, orderNumber } = req.body;
-        if (!filledData || !orderNumber) {
-            return res.status(400).json({ error: 'Chybějící data' });
+        if (!filledData || filledData.trim() === "") {
+            throw new Error("filledData je prázdné, PDF se nevygeneruje.");
         }
 
-        const zipPath = path.join(__dirname, `${orderNumber}.zip`);
+        const tempFolder = path.join(__dirname, 'temp');
+        if (!fs.existsSync(tempFolder)) {
+            fs.mkdirSync(tempFolder);
+        }
+
+        const fileName = orderNumber ? orderNumber : 'Dokument';
+
+        // 📌 Vytvoření PDF souboru
+        const pdfPath = path.join(tempFolder, `${fileName}.pdf`);
+        const pdfDoc = new PDFDocument();
+        const pdfStream = fs.createWriteStream(pdfPath);
+        pdfDoc.pipe(pdfStream);
+
+        pdfDoc.font('Helvetica').fontSize(14).text(`Souhrn vyplněných formulářů`, { align: 'center' });
+        pdfDoc.moveDown(2);
+
+        filledData.split('\n').forEach(line => {
+            pdfDoc.fontSize(12).text(line.trim(), { align: 'left' });
+            pdfDoc.moveDown(0.5);
+        });
+
+        pdfDoc.end();
+
+        await new Promise((resolve) => pdfStream.on('finish', resolve));
+
+        // 📌 Vytvoření ZIP souboru
+        const zipPath = path.join(tempFolder, `${fileName}.zip`);
         const output = fs.createWriteStream(zipPath);
         const archive = archiver('zip', { zlib: { level: 9 } });
 
         output.on('close', () => {
-            res.download(zipPath, `${orderNumber}.zip`, () => {
+            res.download(zipPath, `${fileName}.zip`, (err) => {
+                if (err) console.error('Chyba při stahování ZIP:', err);
                 fs.unlinkSync(zipPath);
+                fs.unlinkSync(pdfPath);
             });
         });
 
-        archive.on('error', (err) => {
-            console.error('Chyba při generování ZIP souboru:', err);
-            res.status(500).json({ error: 'Chyba při generování ZIP souboru' });
-        });
-
+        archive.on('error', (err) => res.status(500).send({ error: err.message }));
         archive.pipe(output);
 
-        // Přidání souboru s vyplněnými daty
-        archive.append(filledData, { name: `objednavka_${orderNumber}.txt` });
+        archive.file(pdfPath, { name: `${fileName}.pdf` });
 
-        // Přidání nahraných souborů
         if (attachments && attachments.length > 0) {
-            attachments.forEach((file) => {
-                const buffer = Buffer.from(file.content, 'base64');
-                archive.append(buffer, { name: file.filename });
+            attachments.forEach((file, index) => {
+                const fileBuffer = Buffer.from(file.content, 'base64');
+                archive.append(fileBuffer, { name: `file${index + 1}_${file.filename}` });
             });
         }
 
         archive.finalize();
     } catch (error) {
-        console.error('Chyba při zpracování ZIP souboru:', error);
-        res.status(500).json({ error: 'Chyba při zpracování ZIP souboru' });
+        console.error('Chyba při generování ZIP souboru:', error);
+        res.status(500).send('Chyba při generování ZIP souboru: ' + error.message);
     }
 });
 
-// 📌 Spuštění serveru
+// 📌 Spuštění serveru na zadaném portu
 app.listen(PORT, () => {
     console.log(`Server běží na http://localhost:${PORT}`);
 });

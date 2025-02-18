@@ -4,26 +4,6 @@ document.addEventListener('DOMContentLoaded', function() {
     var packageNumberInput = document.getElementById('packageNumber');
     var ordersDiv = document.getElementById('orders');
 
-function syncOrders() {
-    const localOrders = JSON.parse(localStorage.getItem('documents')) || [];
-
-    fetch('/syncOrders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ localOrders })
-    })
-    .then(response => response.json())
-    .then(data => {
-        localStorage.setItem('documents', JSON.stringify(data.mergedOrders));
-        renderOrders();
-    })
-    .catch(error => console.error('Chyba při synchronizaci objednávek:', error));
-}
-
-document.addEventListener('DOMContentLoaded', syncOrders);
-
-    
-    
     goToStrana2Button.addEventListener('click', function() {
         localStorage.removeItem('currentDocumentIndex');
         window.location.href = 'Strana2.html';
@@ -43,8 +23,6 @@ document.addEventListener('DOMContentLoaded', syncOrders);
         });
     });
 
-    
-    
     function loadOrders() {
         var documents = JSON.parse(localStorage.getItem('documents')) || [];
         ordersDiv.innerHTML = ''; // Clear existing orders
