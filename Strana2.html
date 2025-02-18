@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Strana 2</title>
+    <link rel="stylesheet" href="Styly2.css">
+</head>
+<body>
+    <div class="container">
+        <form id="documentForm">
+            <div class="form-group">
+                <h2>Číslo dokumentu</h2>
+                <input type="text" id="documentNumber" name="documentNumber">
+            </div>
+
+            <!-- Nová kolonka pro Dodavatele -->
+            <div class="form-group">
+                <h3>Dodavatel</h3>
+                <input type="text" id="supplier" name="supplier">
+            </div>
+
+            <div class="form-group">
+                <h3>Stav balení</h3>
+                <label><input type="radio" name="packagingStatus" value="1"> 1</label>
+                <label><input type="radio" name="packagingStatus" value="2"> 2</label>
+            </div>
+
+            <div class="form-group">
+                <h3>Označení balení</h3>
+                <label><input type="radio" name="packageLabel" value="1"> 1</label>
+                <label><input type="radio" name="packageLabel" value="2"> 2</label>
+            </div>
+
+            <div class="form-group">
+                <h3>Dodávka odpovídá dokumentům</h3>
+                <label><input type="radio" name="deliveryMatch" value="1"> 1</label>
+                <label><input type="radio" name="deliveryMatch" value="2"> 2</label>
+            </div>
+
+            <div class="form-group">
+                <h3>Dokumenty dodávky</h3>
+                <label><input type="checkbox" name="documents" value="Dodací list"> Dodací list</label>
+                <label><input type="checkbox" name="documents" value="Materiálové listy"> Materiálové listy</label>
+                <label><input type="checkbox" name="documents" value="Faktura"> Faktura</label>
+                <label><input type="checkbox" name="documents" value="Certifikáty/Návody"> Certifikáty/Návody</label>
+                <label><input type="checkbox" name="documents" value="Jiné"> Jiné</label>
+            </div>
+
+            <div class="form-group">
+                <h3>Poznámka</h3>
+                <textarea id="note" name="note"></textarea>
+            </div>
+
+            <div class="form-group">
+                <h3>Vstupní kontrolu provedl</h3>
+                <input type="text" id="controlBy" name="controlBy">
+            </div>
+
+            <div class="form-group">
+                <h3>Datum</h3>
+                <input type="date" id="date" name="date">
+            </div>
+
+            <!-- Nová kolonka pro nahrávání souborů -->
+            <div class="form-group">
+                <h3>Nahrát soubory</h3>
+                <input type="file" id="fileUpload" name="fileUpload" multiple>
+                <div id="fileList"></div>
+            </div>
+            <!-- Konec nové kolonky -->
+
+            <div class="form-group">
+                <h3>Celkový výsledek</h3>
+                <select id="result" name="result">
+                    <option value="OK">OK</option>
+                    <option value="NOK">NOK</option>
+                </select>
+            </div>
+
+            <div class="buttons">
+                <button type="button" id="endBtn">Konec</button>
+                <button type="submit" id="saveBtn">Hotovo</button>
+            </div>
+
+            <button type="button" id="cameraBtn">Camera</button>
+        </form>
+        <!-- Space for form from Strana3.html -->
+        <div id="form3Container"></div>
+    </div>
+    <script src="Script2.js"></script>
+</body>
+</html>

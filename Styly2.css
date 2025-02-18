@@ -1,0 +1,98 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #7CB9E8;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    height: 100vh;
+    overflow-y: auto;
+}
+
+.container {
+    border: 1px solid #000;
+    padding: 20px;
+    background-color: #fff;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    width: 80%;
+    max-width: 600px;
+    margin: 20px 0 auto;
+}
+
+h2, h3 {
+    margin-top: 20px;
+    margin-bottom: 10px;
+}
+
+input[type="text"], input[type="date"], input[type="file"], textarea, select {
+    width: 100%;
+    padding: 10px;
+    margin-top: 10px;
+    margin-bottom: 20px;
+    border: 1px solid #000;
+}
+
+textarea {
+    height: 100px;
+    margin: auto;
+}
+
+label {
+    display: block;
+    margin-bottom: 10px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.buttons {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
+}
+
+button {
+    padding: 10px 20px;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+#endBtn {
+    background-color: #dc3545;
+    color: #fff;
+}
+
+#saveBtn {
+    background-color: #28a745;
+    color: #fff;
+}
+
+#cameraBtn {
+    background-color: #007bff;
+    color: #fff;
+    margin-top: 20px;
+}
+
+button:hover {
+    opacity: 0.8;
+}
+
+#note, #documentNumber, #controlBy, #date, #result, #fileUpload {
+    width: 550px;
+}
+
+#fileList {
+    background-color: #f8f8f8;
+    border: 1px solid #ddd;
+    padding: 10px;
+    margin-top: 10px;
+    max-height: 150px;
+    overflow-y: auto;
+}
+
+#fileList div {
+    margin-bottom: 5px;
+}

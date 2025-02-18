@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Strana 3</title>
+    <link rel="stylesheet" href="Styly3.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Space for form from Strana2.html -->
+        <div id="form2Container"></div>
+        <form id="orderForm">
+            <div class="form-group">
+                <label for="orderNumber">Číslo objednávky</label>
+                <input type="text" id="orderNumber" name="orderNumber">
+            </div>
+
+            <div class="form-group">
+                <label for="supplier">Dodavatel</label>
+                <input type="text" id="supplier" name="supplier">
+            </div>
+
+            <div class="form-group">
+                <label for="confirmedDeliveryDate">Potvrzené datum dodání</label>
+                <input type="date" id="confirmedDeliveryDate" name="confirmedDeliveryDate">
+            </div>
+
+            <div class="form-group">
+                <label for="deliveryDate">Datum dodání</label>
+                <input type="date" id="deliveryDate" name="deliveryDate">
+            </div>
+
+            <div class="form-group">
+                <label for="timeliness">Včasnost dodávky</label>
+                <div>
+                    <label><input type="radio" name="timeliness" value="OK"> OK</label>
+                    <label><input type="radio" name="timeliness" value="NOK"> NOK</label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Kontrola vůči systému (úplnost, cena...)</label>
+                <div>
+                    <label><input type="radio" name="systemCheck" value="1"> 1</label>
+                    <label><input type="radio" name="systemCheck" value="2"> 2</label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Komunikace s dodavatelem</label>
+                <div>
+                    <label><input type="radio" name="communication" value="1"> 1</label>
+                    <label><input type="radio" name="communication" value="2"> 2</label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Druh zboží</label>
+                <div>
+                    <label><input type="checkbox" name="goodsType" value="Výrobní"> Výrobní</label>
+                    <label><input type="checkbox" name="goodsType" value="Ostatní"> Ostatní</label>
+                </div>
+            </div>
+
+            <!-- Nová kolonka pro Cenu -->
+            <div class="form-group">
+                <label for="price">Cena</label>
+                <input type="text" id="price" name="price">
+            </div>
+
+            <!-- Nová kolonka pro nahrávání souborů -->
+            <div class="form-group">
+                <h3>Nahrát soubory</h3>
+                <input type="file" id="fileUpload" name="fileUpload" multiple>
+                <div id="fileList"></div>
+            </div>
+            <!-- Konec nové kolonky -->
+
+            <div class="form-group">
+                <label for="note">Poznámka</label>
+                <textarea id="note" name="note"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label>Vstupní kontrola</label>
+                <div>
+                    <label><input type="radio" name="entryControl" value="Ano"> Ano</label>
+                    <label><input type="radio" name="entryControl" value="Ne"> Ne</label>
+                </div>
+            </div>
+
+            <div class="buttons">
+                <button type="button" id="endBtn">Konec</button>
+                <button type="submit" id="saveBtn">Hotovo</button>
+            </div>
+        </form>
+    </div>
+    <script src="Script3.js"></script>
+</body>
+</html>
+
+

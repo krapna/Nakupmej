@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Strana 4 - Vstupní kontrola</title>
+    <link rel="stylesheet" href="Styly4.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Vstupní kontrola</h1>
+        <form id="inspectionForm">
+            <div class="form-group">
+                <label for="documentNumber"><strong>Číslo dokumentu</strong></label>
+                <input type="text" id="documentNumber" name="documentNumber" readonly>
+            </div>
+            <div class="form-group">
+                <label for="supplier"><strong>Dodavatel</strong></label>
+                <input type="text" id="supplier" name="supplier" readonly>
+            </div>
+            <div class="form-group">
+                <label><strong>Fyzické</strong></label>
+                <label><input type="radio" name="physical" value="NR"> NR</label>
+                <label><input type="radio" name="physical" value="OK"> OK</label>
+                <label><input type="radio" name="physical" value="NOK"> NOK</label>
+            </div>
+            <div class="form-group">
+                <label><strong>Chemické</strong></label>
+                <label><input type="radio" name="chemical" value="NR"> NR</label>
+                <label><input type="radio" name="chemical" value="OK"> OK</label>
+                <label><input type="radio" name="chemical" value="NOK"> NOK</label>
+            </div>
+            <div class="form-group">
+                <label><strong>Materiálové</strong></label>
+                <label><input type="radio" name="material" value="NR"> NR</label>
+                <label><input type="radio" name="material" value="OK"> OK</label>
+                <label><input type="radio" name="material" value="NOK"> NOK</label>
+            </div>
+            <div class="form-group">
+                <label><strong>Dokumentace odpovídá požadavkům</strong></label>
+                <label><input type="radio" name="documentation" value="OK"> OK</label>
+                <label><input type="radio" name="documentation" value="NOK"> NOK</label>
+            </div>
+            <div class="form-group">
+                <label for="note"><strong>Poznámka</strong></label>
+                <textarea id="note" name="note"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="controlBy"><strong>Vstupní kontrolu provedl</strong></label>
+                <input type="text" id="controlBy" name="controlBy">
+            </div>
+            <div class="form-group">
+                <label for="date"><strong>Datum</strong></label>
+                <input type="date" id="date" name="date">
+            </div>
+            <div class="form-group">
+                <label for="result"><strong>Celkový výsledek</strong></label>
+                <input type="text" id="result" name="result">
+            </div>
+            <div class="buttons">
+                <button type="button" id="endBtn">Konec</button>
+                <button type="submit" id="saveBtn">Hotovo</button>
+            </div>
+        </form>
+    </div>
+    <script src="Script4.js"></script>
+</body>
+</html>
+
+
+
+

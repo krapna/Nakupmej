@@ -1,0 +1,95 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f5f5f5;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start; /* Align items to the top */
+    height: 100vh;
+    overflow-y: auto; /* Enable vertical scrolling */
+}
+
+.container {
+    border: 1px solid #000;
+    padding: 20px;
+    background-color: #fff;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    width: 80%;
+    max-width: 600px;
+    margin: 20px 0; /* Add margin to center the container vertically */
+}
+
+h2, h3, label {
+    margin-top: 20px;
+    margin-bottom: 10px;
+}
+
+input[type="text"], input[type="date"], textarea, select, input[type="file"] {
+    width: 100%;
+    padding: 10px;
+    margin-top: 10px;
+    margin-bottom: 20px;
+    border: 1px solid #000;
+}
+
+textarea {
+    height: 100px;
+}
+
+label {
+    display: block;
+    margin-bottom: 10px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group div {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+}
+
+.form-group div label {
+    margin-right: 10px;
+}
+
+#invoiceList {
+    margin-top: 10px;
+}
+
+.buttons {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
+}
+
+button {
+    padding: 10px 20px;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+#endBtn {
+    background-color: #dc3545;
+    color: #fff;
+}
+
+#saveBtn {
+    background-color: #28a745;
+    color: #fff;
+}
+
+#cameraBtn {
+    background-color: #007bff;
+    color: #fff;
+    margin-top: 20px;
+}
+
+button:hover {
+    opacity: 0.8;
+}
+
