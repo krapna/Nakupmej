@@ -11,7 +11,7 @@ const PORT = process.env.PORT || 3000;
 app.use(bodyParser.json({ limit: '200mb' }));
 app.use(bodyParser.urlencoded({ limit: '200mb', extended: true }));
 
-// 📌 Poskytování statických souborů (HTML, CSS, JS)
+// 📌 Poskytování statických souborů
 app.use(express.static(path.join(__dirname, 'public')));
 
 // 📌 Oprava přesměrování na hlavní stránku
@@ -61,6 +61,32 @@ app.post('/syncOrders', (req, res) => {
     } catch (error) {
         console.error('Chyba při synchronizaci objednávek:', error);
         res.status(500).json({ error: 'Chyba při synchronizaci' });
+    }
+});
+
+// 📌 Endpoint pro trvalé odstranění objednávky ze serveru
+app.post('/deleteOrder', (req, res) => {
+    try {
+        const { number } = req.body;
+        if (!number) {
+            return res.status(400).json({ error: 'Nebyl poskytnut platný číslo objednávky' });
+        }
+
+        let orders = [];
+        if (fs.existsSync(DATA_FILE)) {
+            orders = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
+        }
+
+        // 📌 Odstranění objednávky podle čísla
+        const updatedOrders = orders.filter(order => order.number !== number);
+
+        // 📌 Uložení zpět do souboru orders.json
+        fs.writeFileSync(DATA_FILE, JSON.stringify(updatedOrders, null, 2), 'utf8');
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Chyba při mazání objednávky:', error);
+        res.status(500).json({ error: 'Chyba při mazání' });
     }
 });
 
