@@ -50,7 +50,11 @@ app.post('/syncOrders', (req, res) => {
 
         // 📌 Sloučení a odstranění duplicit podle čísla objednávky
         const mergedOrders = [...serverOrders, ...localOrders].reduce((acc, order) => {
-            if (!acc.find(o => o.number === order.number)) {
+            const existingOrder = acc.find(o => o.number === order.number);
+            if (existingOrder) {
+                // 📌 Pokud existuje, přepíše se novějšími daty
+                Object.assign(existingOrder, order);
+            } else {
                 acc.push(order);
             }
             return acc;
@@ -87,72 +91,6 @@ app.post('/deleteOrder', (req, res) => {
     } catch (error) {
         console.error('Chyba při mazání objednávky:', error);
         res.status(500).json({ error: 'Chyba při mazání' });
-    }
-});
-
-// 📌 Endpoint pro generování ZIP souboru
-app.post('/generateZip', async (req, res) => {
-    const { filledData, attachments, orderNumber } = req.body;
-
-    try {
-        if (!filledData || filledData.trim() === "") {
-            throw new Error("filledData je prázdné, PDF se nevygeneruje.");
-        }
-
-        const tempFolder = path.join(__dirname, 'temp');
-        if (!fs.existsSync(tempFolder)) {
-            fs.mkdirSync(tempFolder);
-        }
-
-        const fileName = orderNumber ? orderNumber : 'Dokument';
-
-        // 📌 Vytvoření PDF souboru
-        const pdfPath = path.join(tempFolder, `${fileName}.pdf`);
-        const pdfDoc = new PDFDocument();
-        const pdfStream = fs.createWriteStream(pdfPath);
-        pdfDoc.pipe(pdfStream);
-
-        pdfDoc.font('Helvetica').fontSize(14).text(`Souhrn vyplněných formulářů`, { align: 'center' });
-        pdfDoc.moveDown(2);
-
-        filledData.split('\n').forEach(line => {
-            pdfDoc.fontSize(12).text(line.trim(), { align: 'left' });
-            pdfDoc.moveDown(0.5);
-        });
-
-        pdfDoc.end();
-
-        await new Promise((resolve) => pdfStream.on('finish', resolve));
-
-        // 📌 Vytvoření ZIP souboru
-        const zipPath = path.join(tempFolder, `${fileName}.zip`);
-        const output = fs.createWriteStream(zipPath);
-        const archive = archiver('zip', { zlib: { level: 9 } });
-
-        output.on('close', () => {
-            res.download(zipPath, `${fileName}.zip`, (err) => {
-                if (err) console.error('Chyba při stahování ZIP:', err);
-                fs.unlinkSync(zipPath);
-                fs.unlinkSync(pdfPath);
-            });
-        });
-
-        archive.on('error', (err) => res.status(500).send({ error: err.message }));
-        archive.pipe(output);
-
-        archive.file(pdfPath, { name: `${fileName}.pdf` });
-
-        if (attachments && attachments.length > 0) {
-            attachments.forEach((file, index) => {
-                const fileBuffer = Buffer.from(file.content, 'base64');
-                archive.append(fileBuffer, { name: `file${index + 1}_${file.filename}` });
-            });
-        }
-
-        archive.finalize();
-    } catch (error) {
-        console.error('Chyba při generování ZIP souboru:', error);
-        res.status(500).send('Chyba při generování ZIP souboru: ' + error.message);
     }
 });
 
