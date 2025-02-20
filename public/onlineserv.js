@@ -1,6 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
     syncWithServer();
-    setInterval(syncWithServer, 4000); // 📌 Automatická synchronizace každých 5 sekund
 
     // 📌 Automatická detekce kliknutí na tlačítko Odstranit
     document.body.addEventListener('click', function(event) {
@@ -12,6 +11,14 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     });
+
+    // 📌 Automatická detekce změny v dokumentech a synchronizace
+    document.body.addEventListener('change', function() {
+        syncWithServer();
+    });
+
+    // 📌 Automatická synchronizace dat mezi zařízeními
+    setInterval(syncWithServer, 3000); // Každé 3 sekundy
 });
 
 // 📌 Synchronizace dat mezi localStorage a serverem
@@ -26,12 +33,12 @@ function syncWithServer() {
     .then(response => response.json())
     .then(data => {
         localStorage.setItem('documents', JSON.stringify(data.mergedOrders));
-        console.log('Synchronizace úspěšná:', data.mergedOrders);
+        console.log('📌 Synchronizace úspěšná:', data.mergedOrders);
     })
-    .catch(error => console.error('Chyba při synchronizaci objednávek:', error));
+    .catch(error => console.error('❌ Chyba při synchronizaci objednávek:', error));
 }
 
-// 📌 Odstranění objednávky na serveru i localStorage
+// 📌 Odstranění objednávky na serveru i ve všech zařízeních
 function removeOrder(orderNumber) {
     fetch('/deleteOrder', {
         method: 'POST',
@@ -41,17 +48,17 @@ function removeOrder(orderNumber) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            console.log(`Objednávka ${orderNumber} byla úspěšně odstraněna.`);
+            console.log(`📌 Objednávka ${orderNumber} byla úspěšně odstraněna.`);
             
-            // 📌 Odstranění objednávky i z localStorage
+            // 📌 Okamžité odstranění objednávky i z localStorage
             let localOrders = JSON.parse(localStorage.getItem('documents')) || [];
             localOrders = localOrders.filter(order => order.number !== orderNumber);
             localStorage.setItem('documents', JSON.stringify(localOrders));
 
-            syncWithServer(); // 📌 Znovu načíst data ze serveru
+            syncWithServer(); // 📌 Ihned znovu načíst data ze serveru
         } else {
-            console.error('Chyba při mazání objednávky:', data.error);
+            console.error('❌ Chyba při mazání objednávky:', data.error);
         }
     })
-    .catch(error => console.error('Chyba při komunikaci se serverem:', error));
+    .catch(error => console.error('❌ Chyba při komunikaci se serverem:', error));
 }
