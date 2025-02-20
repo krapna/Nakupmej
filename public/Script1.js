@@ -33,7 +33,6 @@ document.addEventListener('DOMContentLoaded', function() {
             orderDiv.style.borderColor = doc.borderColor || 'blue';
             orderDiv.style.backgroundColor = doc.borderColor || 'blue';
             orderDiv.style.display = 'flex';
-            orderDiv.style.justifyContent = 'space-between';
             orderDiv.style.alignItems = 'center';
             orderDiv.style.padding = '5px';
 
@@ -42,6 +41,8 @@ document.addEventListener('DOMContentLoaded', function() {
             orderText.style.flex = '1'; // Zabírá dostupný prostor
 
             var buttonsContainer = document.createElement('div'); // Kontejner na tlačítka
+            buttonsContainer.style.display = 'flex';
+            buttonsContainer.style.gap = '5px'; // Rozestup mezi tlačítky
 
             var viewBtn = document.createElement('button');
             viewBtn.textContent = 'Zobrazit';
