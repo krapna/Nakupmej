@@ -42,7 +42,7 @@ function syncWithServer() {
 function removeOrder(orderNumber) {
     fetch('/deleteOrder', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' }, 
         body: JSON.stringify({ number: orderNumber })
     })
     .then(response => response.json())

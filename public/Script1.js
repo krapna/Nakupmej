@@ -42,14 +42,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
             var openPageBtn = document.createElement('button');
             if (doc.borderColor === 'green') {
-                openPageBtn.textContent = 'Strana 5';
+                openPageBtn.textContent = 'K předání';
                 openPageBtn.style.backgroundColor = '#28a745'; // Barva tlačítka pro Strana 5
                 openPageBtn.addEventListener('click', function() {
                     localStorage.setItem('currentDocumentIndex', index); // Nastavíme index aktuálního dokumentu
                     window.location.href = 'Strana5.html';
                 });
             } else {
-                openPageBtn.textContent = 'Strana 3';
+                openPageBtn.textContent = 'Nákup';
                 openPageBtn.addEventListener('click', function() {
                     localStorage.setItem('currentDocumentIndex', index); // Nastavíme index aktuálního dokumentu
                     window.location.href = 'Strana3.html';
@@ -61,7 +61,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (doc.hasStrana4) {
                 var openStrana4Btn = document.createElement('button');
-                openStrana4Btn.textContent = 'Strana 4';
+                openStrana4Btn.textContent = 'Kvalita';
                 openStrana4Btn.style.backgroundColor = 'red';
                 openStrana4Btn.addEventListener('click', function() {
                     localStorage.setItem('currentDocumentIndex', index);
