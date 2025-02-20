@@ -11,7 +11,7 @@ const PORT = process.env.PORT || 3000;
 app.use(bodyParser.json({ limit: '200mb' }));
 app.use(bodyParser.urlencoded({ limit: '200mb', extended: true }));
 
-// 📌 Poskytování statických souborů
+// 📌 Poskytování statických souborů (HTML, CSS, JS)
 app.use(express.static(path.join(__dirname, 'public')));
 
 // 📌 Oprava přesměrování na hlavní stránku
@@ -50,11 +50,7 @@ app.post('/syncOrders', (req, res) => {
 
         // 📌 Sloučení a odstranění duplicit podle čísla objednávky
         const mergedOrders = [...serverOrders, ...localOrders].reduce((acc, order) => {
-            const existingOrder = acc.find(o => o.number === order.number);
-            if (existingOrder) {
-                // 📌 Pokud existuje, přepíše se novějšími daty
-                Object.assign(existingOrder, order);
-            } else {
+            if (!acc.find(o => o.number === order.number)) {
                 acc.push(order);
             }
             return acc;
@@ -68,29 +64,69 @@ app.post('/syncOrders', (req, res) => {
     }
 });
 
-// 📌 Endpoint pro trvalé odstranění objednávky ze serveru
-app.post('/deleteOrder', (req, res) => {
+// 📌 Endpoint pro generování ZIP souboru
+app.post('/generateZip', async (req, res) => {
+    const { filledData, attachments, orderNumber } = req.body;
+
     try {
-        const { number } = req.body;
-        if (!number) {
-            return res.status(400).json({ error: 'Nebyl poskytnut platný číslo objednávky' });
+        if (!filledData || filledData.trim() === "") {
+            throw new Error("filledData je prázdné, PDF se nevygeneruje.");
         }
 
-        let orders = [];
-        if (fs.existsSync(DATA_FILE)) {
-            orders = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
+        const tempFolder = path.join(__dirname, 'temp');
+        if (!fs.existsSync(tempFolder)) {
+            fs.mkdirSync(tempFolder);
         }
 
-        // 📌 Odstranění objednávky podle čísla
-        const updatedOrders = orders.filter(order => order.number !== number);
+        const fileName = orderNumber ? orderNumber : 'Dokument';
 
-        // 📌 Uložení zpět do souboru orders.json
-        fs.writeFileSync(DATA_FILE, JSON.stringify(updatedOrders, null, 2), 'utf8');
+        // 📌 Vytvoření PDF souboru
+        const pdfPath = path.join(tempFolder, `${fileName}.pdf`);
+        const pdfDoc = new PDFDocument();
+        const pdfStream = fs.createWriteStream(pdfPath);
+        pdfDoc.pipe(pdfStream);
 
-        res.json({ success: true });
+        pdfDoc.font('Helvetica').fontSize(14).text(`Souhrn vyplněných formulářů`, { align: 'center' });
+        pdfDoc.moveDown(2);
+
+        filledData.split('\n').forEach(line => {
+            pdfDoc.fontSize(12).text(line.trim(), { align: 'left' });
+            pdfDoc.moveDown(0.5);
+        });
+
+        pdfDoc.end();
+
+        await new Promise((resolve) => pdfStream.on('finish', resolve));
+
+        // 📌 Vytvoření ZIP souboru
+        const zipPath = path.join(tempFolder, `${fileName}.zip`);
+        const output = fs.createWriteStream(zipPath);
+        const archive = archiver('zip', { zlib: { level: 9 } });
+
+        output.on('close', () => {
+            res.download(zipPath, `${fileName}.zip`, (err) => {
+                if (err) console.error('Chyba při stahování ZIP:', err);
+                fs.unlinkSync(zipPath);
+                fs.unlinkSync(pdfPath);
+            });
+        });
+
+        archive.on('error', (err) => res.status(500).send({ error: err.message }));
+        archive.pipe(output);
+
+        archive.file(pdfPath, { name: `${fileName}.pdf` });
+
+        if (attachments && attachments.length > 0) {
+            attachments.forEach((file, index) => {
+                const fileBuffer = Buffer.from(file.content, 'base64');
+                archive.append(fileBuffer, { name: `file${index + 1}_${file.filename}` });
+            });
+        }
+
+        archive.finalize();
     } catch (error) {
-        console.error('Chyba při mazání objednávky:', error);
-        res.status(500).json({ error: 'Chyba při mazání' });
+        console.error('Chyba při generování ZIP souboru:', error);
+        res.status(500).send('Chyba při generování ZIP souboru: ' + error.message);
     }
 });
 
@@ -98,3 +134,4 @@ app.post('/deleteOrder', (req, res) => {
 app.listen(PORT, () => {
     console.log(`Server běží na http://localhost:${PORT}`);
 });
+
