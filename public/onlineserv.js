@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     syncWithServer();
-    setInterval(syncWithServer, 5000); // 📌 Automatická synchronizace každých 5 sekund
+    setInterval(syncWithServer, 100); // 📌 Automatická synchronizace každých 5 sekund
 
     // 📌 Automatická detekce kliknutí na tlačítko Odstranit
     document.body.addEventListener('click', function(event) {
