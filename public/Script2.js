@@ -1,34 +1,72 @@
+// Script2.js
+
 document.addEventListener('DOMContentLoaded', function() {
-    var cameraButton = document.getElementById('cameraBtn');
-    var saveButton = document.getElementById('saveBtn');
-    var endButton = document.getElementById('endBtn');
-    var fileUpload = document.getElementById('fileUpload');
-    var fileList = document.getElementById('fileList');
-    var documentForm = document.getElementById('documentForm');
-    var form3Container = document.getElementById('form3Container');
+    const cameraButton = document.getElementById('cameraBtn');
+    const saveButton = document.getElementById('saveBtn');
+    const endButton = document.getElementById('endBtn');
+    const fileUpload = document.getElementById('fileUpload');
+    const fileList = document.getElementById('fileList');
+    const documentForm = document.getElementById('documentForm');
+    const form3Container = document.getElementById('form3Container');
 
-    var currentDocumentIndex = localStorage.getItem('currentDocumentIndex');
-    var documents = JSON.parse(localStorage.getItem('documents')) || [];
-    var currentDocument = currentDocumentIndex !== null ? documents[currentDocumentIndex] : {};
+    // Pomocná funkce pro získání parametrů z URL
+    function getQueryParam(param) {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get(param);
+    }
 
+    // Získáme ID dokumentu z URL (např. Strana2.html?id=123)
+    const docId = getQueryParam('id');
+    if (!docId) {
+        alert('Není zadáno ID dokumentu.');
+        window.location.href = 'Strana1.html';
+        return;
+    }
+
+    let currentDocument = {};
+
+    // Načtení dokumentu ze serveru pomocí GET /api/documents/:id
+    function loadDocument() {
+        fetch(`/api/documents/${docId}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Chyba při načítání dokumentu ze serveru.');
+                }
+                return response.json();
+            })
+            .then(doc => {
+                currentDocument = doc;
+                loadFormData();
+            })
+            .catch(error => {
+                console.error(error);
+                alert('Chyba při načítání dokumentu.');
+            });
+    }
+
+    // Načtení dat do formulářových polí
     function loadFormData() {
         if (!currentDocument) return;
-
         document.getElementById('documentNumber').value = currentDocument.number || '';
-        document.getElementById('supplier').value = currentDocument.supplier || ''; // Předvyplnění pole "Dodavatel"
-        
+        document.getElementById('supplier').value = currentDocument.supplier || '';
+
+        // Nastavení radio tlačítek pro packagingStatus, packageLabel a deliveryMatch
         if (currentDocument.packagingStatus) {
-            document.querySelector(`input[name="packagingStatus"][value="${currentDocument.packagingStatus}"]`).checked = true;
+            const packagingInput = document.querySelector(`input[name="packagingStatus"][value="${currentDocument.packagingStatus}"]`);
+            if (packagingInput) packagingInput.checked = true;
         }
         if (currentDocument.packageLabel) {
-            document.querySelector(`input[name="packageLabel"][value="${currentDocument.packageLabel}"]`).checked = true;
+            const labelInput = document.querySelector(`input[name="packageLabel"][value="${currentDocument.packageLabel}"]`);
+            if (labelInput) labelInput.checked = true;
         }
         if (currentDocument.deliveryMatch) {
-            document.querySelector(`input[name="deliveryMatch"][value="${currentDocument.deliveryMatch}"]`).checked = true;
+            const deliveryInput = document.querySelector(`input[name="deliveryMatch"][value="${currentDocument.deliveryMatch}"]`);
+            if (deliveryInput) deliveryInput.checked = true;
         }
-        if (currentDocument.documents) {
-            currentDocument.documents.forEach(function(doc) {
-                document.querySelector(`input[name="documents"][value="${doc}"]`).checked = true;
+        if (currentDocument.documents && Array.isArray(currentDocument.documents)) {
+            currentDocument.documents.forEach(docName => {
+                const checkbox = document.querySelector(`input[name="documents"][value="${docName}"]`);
+                if (checkbox) checkbox.checked = true;
             });
         }
         document.getElementById('note').value = currentDocument.note || '';
@@ -36,24 +74,27 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('date').value = currentDocument.date || '';
         document.getElementById('result').value = currentDocument.result || '';
 
-        if (currentDocument.files) {
-            currentDocument.files.forEach(function(file) {
+        // Zobrazení nahraných souborů
+        if (currentDocument.files && Array.isArray(currentDocument.files)) {
+            currentDocument.files.forEach(file => {
                 addFileToList(file.name, file.content);
             });
         }
 
+        // Načtení dodatečného formuláře (Form3)
         loadForm3();
     }
 
+    // Vykreslení dodatečného formuláře (Form3)
     function loadForm3() {
-        var form3HTML = `
+        form3Container.innerHTML = `
             <div class="form-group">
                 <label for="orderNumber">Číslo objednávky</label>
                 <input type="text" id="orderNumber" name="orderNumber" value="${currentDocument.orderNumber || ''}">
             </div>
             <div class="form-group">
                 <label for="supplier">Dodavatel</label>
-                <input type="text" id="supplier" name="supplier" value="${currentDocument.supplier || ''}">
+                <input type="text" id="supplierForm3" name="supplier" value="${currentDocument.supplier || ''}">
             </div>
             <div class="form-group">
                 <label for="confirmedDeliveryDate">Potvrzené datum dodání</label>
@@ -87,29 +128,17 @@ document.addEventListener('DOMContentLoaded', function() {
             <div class="form-group">
                 <label>Druh zboží</label>
                 <div>
-                    <label><input type="checkbox" name="goodsType" value="Výrobní" ${currentDocument.goodsType && currentDocument.goodsType.includes('Výrobní') ? 'checked' : ''}> Výrobní</label>
-                    <label><input type="checkbox" name="goodsType" value="Ostatní" ${currentDocument.goodsType && currentDocument.goodsType.includes('Ostatní') ? 'checked' : ''}> Ostatní</label>
-                </div>
-            </div>
-            <div class="form-group">
-                <label for="note">Poznámka</label>
-                <textarea id="note" name="note">${currentDocument.note || ''}</textarea>
-            </div>
-            <div class="form-group">
-                <label>Vstupní kontrola</label>
-                <div>
-                    <label><input type="radio" name="entryControl" value="Ano" ${currentDocument.entryControl === 'Ano' ? 'checked' : ''}> Ano</label>
-                    <label><input type="radio" name="entryControl" value="Ne" ${currentDocument.entryControl === 'Ne' ? 'checked' : ''}> Ne</label>
+                    <label><input type="checkbox" name="goodsType" value="Výrobní" ${(currentDocument.goodsType && currentDocument.goodsType.includes('Výrobní')) ? 'checked' : ''}> Výrobní</label>
+                    <label><input type="checkbox" name="goodsType" value="Ostatní" ${(currentDocument.goodsType && currentDocument.goodsType.includes('Ostatní')) ? 'checked' : ''}> Ostatní</label>
                 </div>
             </div>
         `;
-
-        form3Container.innerHTML = form3HTML;
     }
 
+    // Funkce pro přidání souboru do seznamu zobrazeného uživateli
     function addFileToList(fileName, fileContent) {
-        var fileItem = document.createElement('div');
-        var link = document.createElement('a');
+        const fileItem = document.createElement('div');
+        const link = document.createElement('a');
         link.href = fileContent;
         link.target = '_blank';
         link.textContent = fileName;
@@ -117,57 +146,78 @@ document.addEventListener('DOMContentLoaded', function() {
         fileList.appendChild(fileItem);
     }
 
+    // Obsluha nahrávání souborů – při výběru souboru se přečte jeho obsah a aktualizuje se currentDocument.files
     fileUpload.addEventListener('change', function(event) {
-        var files = Array.from(event.target.files);
+        const files = Array.from(event.target.files);
+        const documentNumber = document.getElementById('documentNumber').value;
+
         files.forEach(function(file) {
-            var reader = new FileReader();
+            const reader = new FileReader();
             reader.onload = function(e) {
-                var fileContent = e.target.result;
-                addFileToList(file.name, fileContent);
+                const fileContent = e.target.result;
+                const fileName = documentNumber ? `${documentNumber}_${file.name}` : file.name;
+                addFileToList(fileName, fileContent);
                 if (!currentDocument.files) {
                     currentDocument.files = [];
                 }
-                currentDocument.files.push({ name: file.name, content: fileContent });
+                currentDocument.files.push({ name: fileName, content: fileContent });
             };
-            reader.readAsDataURL(file); 
+            reader.readAsDataURL(file);
         });
     });
 
-    if (currentDocumentIndex !== null) {
-        loadFormData();
-    }
-
+    // Uložení formuláře – shromáždění dat z formuláře a odeslání PUT requestem na server (endpoint: PUT /api/documents/:id)
     saveButton.addEventListener('click', function(event) {
         event.preventDefault();
 
-        var documentData = {
+        const updatedData = {
             number: document.getElementById('documentNumber').value,
             supplier: document.getElementById('supplier').value,
-            packagingStatus: document.querySelector('input[name="packagingStatus"]:checked')?.value,
-            packageLabel: document.querySelector('input[name="packageLabel"]:checked')?.value,
-            deliveryMatch: document.querySelector('input[name="deliveryMatch"]:checked')?.value,
+            packagingStatus: document.querySelector('input[name="packagingStatus"]:checked') ? document.querySelector('input[name="packagingStatus"]:checked').value : '',
+            packageLabel: document.querySelector('input[name="packageLabel"]:checked') ? document.querySelector('input[name="packageLabel"]:checked').value : '',
+            deliveryMatch: document.querySelector('input[name="deliveryMatch"]:checked') ? document.querySelector('input[name="deliveryMatch"]:checked').value : '',
             documents: Array.from(document.querySelectorAll('input[name="documents"]:checked')).map(el => el.value),
             note: document.getElementById('note').value,
             controlBy: document.getElementById('controlBy').value,
             date: document.getElementById('date').value,
             result: document.getElementById('result').value,
-            files: currentDocument.files || []
+            files: currentDocument.files || {}
         };
 
-        if (currentDocumentIndex !== null) {
-            documents[currentDocumentIndex] = { ...documents[currentDocumentIndex], ...documentData };
-        } else {
-            documents.push(documentData);
-        }
+        // Data z dodatečného formuláře (Form3)
+        updatedData.orderNumber = document.getElementById('orderNumber').value;
+        updatedData.confirmedDeliveryDate = document.getElementById('confirmedDeliveryDate').value;
+        updatedData.deliveryDate = document.getElementById('deliveryDate').value;
+        updatedData.timeliness = document.querySelector('input[name="timeliness"]:checked') ? document.querySelector('input[name="timeliness"]:checked').value : '';
+        updatedData.systemCheck = document.querySelector('input[name="systemCheck"]:checked') ? document.querySelector('input[name="systemCheck"]:checked').value : '';
+        updatedData.communication = document.querySelector('input[name="communication"]:checked') ? document.querySelector('input[name="communication"]:checked').value : '';
+        updatedData.goodsType = Array.from(document.querySelectorAll('input[name="goodsType"]:checked')).map(el => el.value);
 
-        localStorage.setItem('documents', JSON.stringify(documents));
-        localStorage.removeItem('currentDocumentIndex'); 
-
-        window.location.href = 'Strana1.html';
+        fetch(`/api/documents/${docId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updatedData)
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Chyba při ukládání dokumentu.');
+            }
+            return response.json();
+        })
+        .then(data => {
+            window.location.href = 'Strana1.html';
+        })
+        .catch(error => {
+            console.error(error);
+            alert('Chyba při ukládání dokumentu.');
+        });
     });
 
+    // Tlačítko "Konec" – přesměruje bez uložení na Strana1.html
     endButton.addEventListener('click', function() {
-        localStorage.removeItem('currentDocumentIndex');
         window.location.href = 'Strana1.html';
     });
+
+    // Načteme dokument při spuštění skriptu
+    loadDocument();
 });

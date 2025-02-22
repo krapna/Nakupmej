@@ -1,20 +1,24 @@
-document.addEventListener('DOMContentLoaded', function() {
-    var goToStrana2Button = document.getElementById('goToStrana2');
-    var searchButton = document.getElementById('searchBtn');
-    var packageNumberInput = document.getElementById('packageNumber');
-    var ordersDiv = document.getElementById('orders');
+// Script1.js
 
+document.addEventListener('DOMContentLoaded', function() {
+    const goToStrana2Button = document.getElementById('goToStrana2');
+    const searchButton = document.getElementById('searchBtn');
+    const packageNumberInput = document.getElementById('packageNumber');
+    const ordersDiv = document.getElementById('orders');
+
+    // Po kliknutí na "Přejít na Stranu 2" přejdeme na Strana2.html
+    // (Žádné ukládání do localStorage, aktuální dokument se bude předávat přes URL parametry)
     goToStrana2Button.addEventListener('click', function() {
-        localStorage.removeItem('currentDocumentIndex');
         window.location.href = 'Strana2.html';
     });
 
+    // Filtrování dokumentů na klientovi
     searchButton.addEventListener('click', function() {
-        var searchValue = packageNumberInput.value.toLowerCase();
-        var orders = document.querySelectorAll('.order');
+        const searchValue = packageNumberInput.value.toLowerCase();
+        const orders = document.querySelectorAll('.order');
 
-        orders.forEach(function(order) {
-            var orderText = order.textContent.toLowerCase();
+        orders.forEach(order => {
+            const orderText = order.textContent.toLowerCase();
             if (orderText.includes(searchValue)) {
                 order.style.display = 'block';
             } else {
@@ -23,80 +27,92 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
+    // Funkce pro načtení všech dokumentů ze serveru a vykreslení na stránku
     function loadOrders() {
-        var documents = JSON.parse(localStorage.getItem('documents')) || [];
-        ordersDiv.innerHTML = ''; // Vymazání existujících objednávek
+        fetch('/api/documents')  // endpoint, kde server vrací JSON se seznamem dokumentů
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Chyba při načítání dokumentů ze serveru.');
+                }
+                return response.json();
+            })
+            .then(documents => {
+                ordersDiv.innerHTML = ''; // Vyčistit obsah
 
-        documents.forEach(function(doc, index) {
-            var orderDiv = document.createElement('div');
-            orderDiv.className = 'order';
-            orderDiv.style.borderColor = doc.borderColor || 'blue';
-            orderDiv.style.backgroundColor = doc.borderColor || 'blue';
-            orderDiv.style.display = 'flex';
-            orderDiv.style.alignItems = 'center';
-            orderDiv.style.padding = '5px';
+                documents.forEach(doc => {
+                    const orderDiv = document.createElement('div');
+                    orderDiv.className = 'order';
+                    orderDiv.textContent = `Dokument: ${doc.number || ''}`;
+                    orderDiv.style.borderColor = doc.borderColor || 'blue';
+                    orderDiv.style.backgroundColor = doc.borderColor || 'blue';
 
-            var orderText = document.createElement('span');
-            orderText.textContent = `Dokument: ${doc.number}`;
-            orderText.style.flex = '1'; // Zabírá dostupný prostor
+                    // Tlačítko "Zobrazit" - původně nastavovalo localStorage a přecházelo na Strana2.html
+                    // Nyní přejdeme rovnou na Strana2.html a předáme ID dokumentu v URL parametru
+                    const viewBtn = document.createElement('button');
+                    viewBtn.textContent = 'Zobrazit';
+                    viewBtn.addEventListener('click', function() {
+                        window.location.href = 'Strana2.html?id=' + doc.id;
+                    });
 
-            var buttonsContainer = document.createElement('div'); // Kontejner na tlačítka
-            buttonsContainer.style.display = 'flex';
-            buttonsContainer.style.gap = '5px'; // Rozestup mezi tlačítky
+                    // Tlačítko, které se mění podle barvy dokumentu:
+                    // - pokud je zelený, vede na Strana5
+                    // - jinak vede na Strana3
+                    const openPageBtn = document.createElement('button');
+                    if (doc.borderColor === 'green') {
+                        openPageBtn.textContent = 'Strana 5';
+                        openPageBtn.style.backgroundColor = '#28a745';
+                        openPageBtn.addEventListener('click', function() {
+                            window.location.href = 'Strana5.html?id=' + doc.id;
+                        });
+                    } else {
+                        openPageBtn.textContent = 'Strana 3';
+                        openPageBtn.addEventListener('click', function() {
+                            window.location.href = 'Strana3.html?id=' + doc.id;
+                        });
+                    }
 
-            var viewBtn = document.createElement('button');
-            viewBtn.textContent = 'Zobrazit';
-            viewBtn.addEventListener('click', function() {
-                localStorage.setItem('currentDocumentIndex', index);
-                window.location.href = 'Strana2.html';
-            });
+                    orderDiv.appendChild(viewBtn);
+                    orderDiv.appendChild(openPageBtn);
 
-            var openPageBtn = document.createElement('button');
-            if (doc.borderColor === 'green') {
-                openPageBtn.textContent = 'K předání';
-                openPageBtn.style.backgroundColor = '#28a745';
-                openPageBtn.addEventListener('click', function() {
-                    localStorage.setItem('currentDocumentIndex', index);
-                    window.location.href = 'Strana5.html';
+                    // Pokud dokument obsahuje příznak hasStrana4, zobrazíme tlačítko pro Strana4
+                    if (doc.hasStrana4) {
+                        const openStrana4Btn = document.createElement('button');
+                        openStrana4Btn.textContent = 'Strana 4';
+                        openStrana4Btn.style.backgroundColor = 'red';
+                        openStrana4Btn.addEventListener('click', function() {
+                            window.location.href = 'Strana4.html?id=' + doc.id;
+                        });
+                        orderDiv.appendChild(openStrana4Btn);
+                    }
+
+                    // Tlačítko "Odstranit" - volá DELETE /api/documents/:id
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.textContent = 'Odstranit';
+                    deleteBtn.addEventListener('click', function() {
+                        fetch('/api/documents/' + doc.id, {
+                            method: 'DELETE'
+                        })
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error('Chyba při mazání dokumentu.');
+                            }
+                            // Po úspěšném smazání dokument znovu načteme
+                            loadOrders();
+                        })
+                        .catch(err => console.error(err));
+                    });
+
+                    orderDiv.appendChild(deleteBtn);
+                    ordersDiv.appendChild(orderDiv);
                 });
-            } else {
-                openPageBtn.textContent = 'Nákup';
-                openPageBtn.addEventListener('click', function() {
-                    localStorage.setItem('currentDocumentIndex', index);
-                    window.location.href = 'Strana3.html';
-                });
-            }
-
-            buttonsContainer.appendChild(viewBtn);
-            buttonsContainer.appendChild(openPageBtn);
-
-            if (doc.hasStrana4) {
-                var openStrana4Btn = document.createElement('button');
-                openStrana4Btn.textContent = 'Kvalita';
-                openStrana4Btn.style.backgroundColor = 'red';
-                openStrana4Btn.addEventListener('click', function() {
-                    localStorage.setItem('currentDocumentIndex', index);
-                    window.location.href = 'Strana4.html';
-                });
-                buttonsContainer.appendChild(openStrana4Btn);
-            }
-
-            var deleteBtn = document.createElement('button');
-            deleteBtn.textContent = 'Odstranit';
-            deleteBtn.style.marginLeft = 'auto';
-            deleteBtn.addEventListener('click', function() {
-                documents.splice(index, 1);
-                localStorage.setItem('documents', JSON.stringify(documents));
-                loadOrders();
-            });
-
-            orderDiv.appendChild(orderText);
-            orderDiv.appendChild(buttonsContainer);
-            orderDiv.appendChild(deleteBtn);
-
-            ordersDiv.appendChild(orderDiv);
-        });
+            })
+            .catch(error => console.error('Chyba při načítání dokumentů:', error));
     }
 
+    // Načteme dokumenty hned po spuštění
     loadOrders();
+
+    // Každých 5 vteřin znovu načteme dokumenty, aby se změny projevily "online"
+    // Pro skutečnou realtime synchronizaci by bylo lepší použít např. WebSockety.
+    setInterval(loadOrders, 5000);
 });

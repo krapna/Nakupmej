@@ -1,63 +1,106 @@
-document.addEventListener('DOMContentLoaded', function() {
-    var saveButton = document.getElementById('saveBtn');
-    var endButton = document.getElementById('endBtn');
-    
-    var fileUpload = document.getElementById('fileUpload');
-    var fileList = document.getElementById('fileList');
-    
-    var form2Container = document.getElementById('form2Container');
-    var currentDocumentIndex = parseInt(localStorage.getItem('currentDocumentIndex'), 10);
-    var documents = JSON.parse(localStorage.getItem('documents')) || [];
-    var currentDocument = (currentDocumentIndex !== null && !isNaN(currentDocumentIndex)) ? documents[currentDocumentIndex] : null;
+// Script3.js
 
+document.addEventListener('DOMContentLoaded', function() {
+    const saveButton = document.getElementById('saveBtn');
+    const endButton = document.getElementById('endBtn');
+    const fileUpload = document.getElementById('fileUpload');
+    const fileList = document.getElementById('fileList');
+    const form2Container = document.getElementById('form2Container');
+
+    // Pomocná funkce pro získání parametrů z URL
+    function getQueryParam(param) {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get(param);
+    }
+
+    const docId = getQueryParam('id');
+    if (!docId) {
+        alert('Není zadáno ID dokumentu.');
+        window.location.href = 'Strana1.html';
+        return;
+    }
+
+    let currentDocument = {};
+
+    // Načtení dokumentu ze serveru pomocí GET /api/documents/:id
+    function loadDocument() {
+        fetch(`/api/documents/${docId}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Chyba při načítání dokumentu ze serveru.');
+                }
+                return response.json();
+            })
+            .then(doc => {
+                currentDocument = doc;
+                loadFormData();
+            })
+            .catch(error => {
+                console.error(error);
+                alert('Chyba při načítání dokumentu.');
+            });
+    }
+
+    // Načtení dat do formuláře
     function loadFormData() {
         if (!currentDocument) return;
 
-        var form2HTML = `
+        // Vyplnění kontejneru pro zobrazení čísla dokumentu
+        form2Container.innerHTML = `
             <div class="form-group">
                 <h2>Číslo dokumentu</h2>
                 <input type="text" id="documentNumber" name="documentNumber" value="${currentDocument.number || ''}" readonly>
             </div>
         `;
-        form2Container.innerHTML = form2HTML;
 
+        // Předvyplnění ostatních polí formuláře
         document.getElementById('orderNumber').value = currentDocument.orderNumber || '';
-        document.getElementById('supplier').value = currentDocument.supplier || ''; 
+        document.getElementById('supplier').value = currentDocument.supplier || '';
         document.getElementById('confirmedDeliveryDate').value = currentDocument.confirmedDeliveryDate || '';
         document.getElementById('deliveryDate').value = currentDocument.deliveryDate || '';
-        document.getElementById('price').value = currentDocument.price || ''; 
-
-        if (currentDocument.timeliness) {
-            document.querySelector(`input[name="timeliness"][value="${currentDocument.timeliness}"]`).checked = true;
-        }
-        if (currentDocument.systemCheck) {
-            document.querySelector(`input[name="systemCheck"][value="${currentDocument.systemCheck}"]`).checked = true;
-        }
-        if (currentDocument.communication) {
-            document.querySelector(`input[name="communication"][value="${currentDocument.communication}"]`).checked = true;
-        }
-        if (currentDocument.goodsType) {
-            currentDocument.goodsType.forEach(function(type) {
-                document.querySelector(`input[name="goodsType"][value="${type}"]`).checked = true;
-            });
-        }
+        document.getElementById('price').value = currentDocument.price || '';
         document.getElementById('note').value = currentDocument.note || '';
 
+        // Nastavení radiobuttonu pro včasnost dodávky
+        if (currentDocument.timeliness) {
+            const timelinessInput = document.querySelector(`input[name="timeliness"][value="${currentDocument.timeliness}"]`);
+            if (timelinessInput) timelinessInput.checked = true;
+        }
+        // Nastavení radiobuttonu pro kontrolu vůči systému
+        if (currentDocument.systemCheck) {
+            const systemCheckInput = document.querySelector(`input[name="systemCheck"][value="${currentDocument.systemCheck}"]`);
+            if (systemCheckInput) systemCheckInput.checked = true;
+        }
+        // Nastavení radiobuttonu pro komunikaci s dodavatelem
+        if (currentDocument.communication) {
+            const communicationInput = document.querySelector(`input[name="communication"][value="${currentDocument.communication}"]`);
+            if (communicationInput) communicationInput.checked = true;
+        }
+        // Nastavení checkboxů pro druh zboží
+        if (currentDocument.goodsType && Array.isArray(currentDocument.goodsType)) {
+            currentDocument.goodsType.forEach(type => {
+                const checkbox = document.querySelector(`input[name="goodsType"][value="${type}"]`);
+                if (checkbox) checkbox.checked = true;
+            });
+        }
+        // Nastavení radiobuttonu pro vstupní kontrolu
         if (currentDocument.entryControl) {
-            document.querySelector(`input[name="entryControl"][value="${currentDocument.entryControl}"]`).checked = true;
+            const entryControlInput = document.querySelector(`input[name="entryControl"][value="${currentDocument.entryControl}"]`);
+            if (entryControlInput) entryControlInput.checked = true;
         }
 
-        // Načtení nahraných souborů
-        if (currentDocument.files) {
-            currentDocument.files.forEach(function(file) {
+        // Zobrazení nahraných souborů
+        if (currentDocument.files && Array.isArray(currentDocument.files)) {
+            currentDocument.files.forEach(file => {
                 addFileToList(file.name, file.content);
             });
         }
     }
 
+    // Přidání souboru do seznamu zobrazeného uživateli
     function addFileToList(fileName, fileContent) {
-        var fileItem = document.createElement('div');
-        var link = document.createElement('a');
+        const fileItem = document.createElement('div');
+        const link = document.createElement('a');
         link.href = fileContent;
         link.target = '_blank';
         link.textContent = fileName;
@@ -65,80 +108,74 @@ document.addEventListener('DOMContentLoaded', function() {
         fileList.appendChild(fileItem);
     }
 
+    // Obsluha nahrávání souborů
     fileUpload.addEventListener('change', function(event) {
-        var files = Array.from(event.target.files);
-        var documentNumber = document.getElementById('documentNumber').value;
-
-        files.forEach(function(file) {
-            var reader = new FileReader();
+        const files = Array.from(event.target.files);
+        const documentNumber = document.getElementById('documentNumber').value;
+        files.forEach(file => {
+            const reader = new FileReader();
             reader.onload = function(e) {
-                var fileContent = e.target.result;
-
-                // Automatické přejmenování souboru podle čísla dokumentu
-                var fileName = documentNumber ? `${documentNumber}_${file.name}` : file.name;
-
+                const fileContent = e.target.result;
+                const fileName = documentNumber ? `${documentNumber}_${file.name}` : file.name;
                 addFileToList(fileName, fileContent);
                 if (!currentDocument.files) {
                     currentDocument.files = [];
                 }
                 currentDocument.files.push({ name: fileName, content: fileContent });
             };
-            reader.readAsDataURL(file); 
+            reader.readAsDataURL(file);
         });
     });
 
-    if (currentDocument) {
-        loadFormData();
-    }
-
+    // Uložení formuláře – shromáždění dat a odeslání PUT requestem na server
     saveButton.addEventListener('click', function(event) {
         event.preventDefault();
 
-        var entryControlValue = document.querySelector('input[name="entryControl"]:checked')?.value;
-
+        const entryControlValue = document.querySelector('input[name="entryControl"]:checked')?.value;
         if (!entryControlValue) {
             alert("Vyberte prosím možnost pod 'Vstupní kontrola'");
             return;
         }
 
-        var orderData = {
-            entryControl: entryControlValue,
+        const updatedData = {
             orderNumber: document.getElementById('orderNumber').value,
             supplier: document.getElementById('supplier').value,
             confirmedDeliveryDate: document.getElementById('confirmedDeliveryDate').value,
             deliveryDate: document.getElementById('deliveryDate').value,
             price: document.getElementById('price').value,
-            timeliness: document.querySelector('input[name="timeliness"]:checked')?.value,
-            systemCheck: document.querySelector('input[name="systemCheck"]:checked')?.value,
-            communication: document.querySelector('input[name="communication"]:checked')?.value,
+            timeliness: document.querySelector('input[name="timeliness"]:checked') ? document.querySelector('input[name="timeliness"]:checked').value : '',
+            systemCheck: document.querySelector('input[name="systemCheck"]:checked') ? document.querySelector('input[name="systemCheck"]:checked').value : '',
+            communication: document.querySelector('input[name="communication"]:checked') ? document.querySelector('input[name="communication"]:checked').value : '',
             goodsType: Array.from(document.querySelectorAll('input[name="goodsType"]:checked')).map(el => el.value),
             note: document.getElementById('note').value,
-            number: document.getElementById('documentNumber').value,
-            files: currentDocument.files || []  // Uložení souborů
+            entryControl: entryControlValue,
+            files: currentDocument.files || []
         };
 
-        if (currentDocumentIndex !== null && !isNaN(currentDocumentIndex)) {
-            documents[currentDocumentIndex] = { ...documents[currentDocumentIndex], ...orderData };
-        } else {
-            documents.push(orderData);
-            currentDocumentIndex = documents.length - 1; 
-        }
-
-        if (entryControlValue === 'Ano') {
-            documents[currentDocumentIndex].borderColor = 'orange';
-            documents[currentDocumentIndex].hasStrana4 = true;
-        } else if (entryControlValue === 'Ne') {
-            documents[currentDocumentIndex].borderColor = 'green';
-        }
-
-        localStorage.setItem('documents', JSON.stringify(documents));
-        localStorage.removeItem('currentDocumentIndex');
-
-        window.location.href = 'Strana1.html';
+        fetch(`/api/documents/${docId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updatedData)
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Chyba při ukládání dokumentu.');
+            }
+            return response.json();
+        })
+        .then(data => {
+            window.location.href = 'Strana1.html';
+        })
+        .catch(error => {
+            console.error(error);
+            alert('Chyba při ukládání dokumentu.');
+        });
     });
 
+    // Tlačítko "Konec" – přesměruje zpět na Strana1.html bez uložení změn
     endButton.addEventListener('click', function() {
-        localStorage.removeItem('currentDocumentIndex');
         window.location.href = 'Strana1.html';
     });
+
+    loadDocument();
 });
