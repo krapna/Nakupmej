@@ -1,5 +1,3 @@
-// Server.js
-
 const express = require('express');
 const bodyParser = require('body-parser');
 const fs = require('fs');
@@ -7,21 +5,34 @@ const path = require('path');
 const PDFDocument = require('pdfkit');
 const archiver = require('archiver');
 
-// 1) Načteme knihovnu pg
-const { Pool } = require('pg');
-
-// 2) Vytvoříme pool připojení k databázi
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false
-  }
-});
-
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware
+// Cesta k souboru, kam budeme ukládat data
+const dataFilePath = path.join(__dirname, 'data.json');
+
+// Pomocné funkce pro čtení a zápis dat do souboru
+function readOrdersFromFile() {
+  try {
+    if (!fs.existsSync(dataFilePath)) {
+      fs.writeFileSync(dataFilePath, JSON.stringify([]));
+    }
+    const data = fs.readFileSync(dataFilePath, 'utf8');
+    return JSON.parse(data);
+  } catch (err) {
+    console.error('Error reading orders from file:', err);
+    return [];
+  }
+}
+
+function writeOrdersToFile(orders) {
+  try {
+    fs.writeFileSync(dataFilePath, JSON.stringify(orders, null, 2));
+  } catch (err) {
+    console.error('Error writing orders to file:', err);
+  }
+}
+
 app.use(bodyParser.json({ limit: '200mb' }));
 app.use(bodyParser.urlencoded({ limit: '200mb', extended: true }));
 
@@ -33,95 +44,24 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'Strana0.html'));
 });
 
-// GET /api/documents – vrátí seznam všech dokumentů
-app.get('/api/documents', async (req, res) => {
-  try {
-    const result = await pool.query('SELECT id, data FROM documents');
-    // Vrátíme pole objektů, kde "id" je z tabulky a zbytek je z data JSON
-    const docs = result.rows.map(row => ({ id: row.id, ...row.data }));
-    res.json(docs);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Database error' });
-  }
+// Endpoint pro synchronizaci – klient posílá (nebo nemusí posílat) své lokální data,
+// ale my vždy vrátíme obsah souboru jako zdroj pravdy.
+app.post('/syncOrders', (req, res) => {
+  // Pro jednoduchost ignorujeme data, která klient posílá a vrátíme obsah souboru.
+  const orders = readOrdersFromFile();
+  res.json({ mergedOrders: orders });
 });
 
-// GET /api/documents/:id – vrátí konkrétní dokument podle ID
-app.get('/api/documents/:id', async (req, res) => {
-  try {
-    const id = parseInt(req.params.id, 10);
-    const result = await pool.query('SELECT id, data FROM documents WHERE id = $1', [id]);
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Document not found' });
-    }
-    // Sloučíme id a data do jednoho objektu
-    const doc = { id: result.rows[0].id, ...result.rows[0].data };
-    res.json(doc);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Database error' });
-  }
+// Endpoint pro odstranění objednávky podle čísla
+app.post('/deleteOrder', (req, res) => {
+  const orderNumber = req.body.number;
+  let orders = readOrdersFromFile();
+  const newOrders = orders.filter(order => order.number !== orderNumber);
+  writeOrdersToFile(newOrders);
+  res.json({ success: true });
 });
 
-// POST /api/documents – vytvoří nový dokument
-app.post('/api/documents', async (req, res) => {
-  try {
-    // Všechna data uložíme do JSON sloupce
-    const data = req.body;
-    const insertQuery = 'INSERT INTO documents (data) VALUES ($1) RETURNING id';
-    const result = await pool.query(insertQuery, [data]);
-    const newId = result.rows[0].id;
-    // Vrátíme nový dokument, sloučený s ID
-    res.status(201).json({ id: newId, ...data });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Database error' });
-  }
-});
-
-// PUT /api/documents/:id – aktualizuje existující dokument
-app.put('/api/documents/:id', async (req, res) => {
-  try {
-    const id = parseInt(req.params.id, 10);
-    // Všechna nová data uložíme do JSON sloupce
-    const data = req.body;
-    // Ověříme, zda dokument existuje
-    const checkResult = await pool.query('SELECT id FROM documents WHERE id = $1', [id]);
-    if (checkResult.rows.length === 0) {
-      return res.status(404).json({ error: 'Document not found' });
-    }
-    const updateQuery = 'UPDATE documents SET data = $1 WHERE id = $2 RETURNING id';
-    const result = await pool.query(updateQuery, [data, id]);
-    const updatedId = result.rows[0].id;
-    // Vrátíme aktualizovaný dokument
-    res.json({ id: updatedId, ...data });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Database error' });
-  }
-});
-
-// DELETE /api/documents/:id – odstraní dokument
-app.delete('/api/documents/:id', async (req, res) => {
-  try {
-    const id = parseInt(req.params.id, 10);
-    // Nejdřív zjistíme, jestli dokument existuje
-    const selectResult = await pool.query('SELECT id, data FROM documents WHERE id = $1', [id]);
-    if (selectResult.rows.length === 0) {
-      return res.status(404).json({ error: 'Document not found' });
-    }
-    const doc = { id: selectResult.rows[0].id, ...selectResult.rows[0].data };
-    // Odstraníme dokument
-    await pool.query('DELETE FROM documents WHERE id = $1', [id]);
-    // Vrátíme smazaný dokument
-    res.json(doc);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Database error' });
-  }
-});
-
-// Endpoint pro generování ZIP (beze změn)
+// Endpoint pro generování ZIP souboru – beze změn
 app.post('/generateZip', async (req, res) => {
   const { filledData, attachments, orderNumber } = req.body;
   try {
