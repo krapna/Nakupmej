@@ -1,14 +1,9 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // Inicializace socket.io – pokud onlineserv.js již socket vytvořil, použijeme window.socket, jinak vytvoříme nový
     const socket = window.socket || io();
-
-    // Získání parametru docIndex z URL (pokud existuje)
     const urlParams = new URLSearchParams(window.location.search);
     let docIndex = urlParams.get('docIndex');
-
-    // Globální proměnné pro synchronizaci dokumentů
     let documents = [];
-    let currentDocument = {}; // bude nastaveno, pokud docIndex existuje
+    let currentDocument = {};
 
     const saveButton = document.getElementById('saveBtn');
     const endButton = document.getElementById('endBtn');
@@ -19,14 +14,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // Funkce pro načtení dat aktuálního dokumentu do formuláře
     function loadFormData() {
         if (!currentDocument) return;
-        // Vložení read-only pole s číslem dokumentu do containeru
         form2Container.innerHTML = `
             <div class="form-group">
                 <h2>Číslo dokumentu</h2>
                 <input type="text" id="documentNumber" name="documentNumber" value="${currentDocument.number || ''}" readonly>
             </div>
         `;
-        // Vyplnění dalších polí formuláře
         document.getElementById('orderNumber').value = currentDocument.orderNumber || '';
         document.getElementById('supplier').value = currentDocument.supplier || '';
         document.getElementById('confirmedDeliveryDate').value = currentDocument.confirmedDeliveryDate || '';
@@ -57,7 +50,6 @@ document.addEventListener('DOMContentLoaded', function() {
             if (ec) ec.checked = true;
         }
 
-        // Zobrazení nahraných souborů, pokud existují
         if (currentDocument.files) {
             currentDocument.files.forEach(function(file) {
                 addFileToList(file.name, file.content);
@@ -65,7 +57,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Pomocná funkce pro přidání souboru do seznamu
+    // Pomocná funkce pro zobrazení nahraných souborů
     function addFileToList(fileName, fileContent) {
         const fileItem = document.createElement('div');
         const link = document.createElement('a');
@@ -76,7 +68,7 @@ document.addEventListener('DOMContentLoaded', function() {
         fileList.appendChild(fileItem);
     }
 
-    // Obsluha nahrávání souborů – soubory se načítají a přidávají do currentDocument.files
+    // Obsluha nahrávání souborů
     fileUpload.addEventListener('change', function(event) {
         const files = Array.from(event.target.files);
         const documentNumber = document.getElementById('documentNumber').value;
@@ -95,7 +87,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Při obdržení synchronizovaných dokumentů ze serveru se aktualizují globální proměnné
+    // Při obdržení synchronizovaných dokumentů ze serveru aktualizujeme currentDocument
     document.addEventListener('documentsUpdated', function(event) {
         documents = event.detail;
         if (docIndex !== null && documents[docIndex]) {
@@ -104,19 +96,17 @@ document.addEventListener('DOMContentLoaded', function() {
         loadFormData();
     });
 
-    // Po navázání spojení požádáme server o aktuální dokumenty
     socket.emit('requestDocuments');
 
-    // Obsluha tlačítka "Hotovo" – shromáždíme data z formuláře a aktualizujeme dokument
+    // Obsluha tlačítka "Hotovo" – při uložení formuláře zpracujeme data a nastavíme logiku vstupní kontroly
     saveButton.addEventListener('click', function(event) {
         event.preventDefault();
-
         const entryControlValue = document.querySelector('input[name="entryControl"]:checked')?.value;
         if (!entryControlValue) {
             alert("Vyberte prosím možnost pod 'Vstupní kontrola'");
             return;
         }
-
+        
         currentDocument.entryControl = entryControlValue;
         currentDocument.orderNumber = document.getElementById('orderNumber').value;
         currentDocument.supplier = document.getElementById('supplier').value;
@@ -130,22 +120,21 @@ document.addEventListener('DOMContentLoaded', function() {
         currentDocument.goodsType = goodsTypeChecked;
         currentDocument.note = document.getElementById('note').value;
 
-        // Nastavíme barvu dokumentu na zelenou – označuje se tím vyplnění Strany3
-        currentDocument.borderColor = 'green';
+        // Podle volby vstupní kontroly nastavíme vlastnosti:
+        if (entryControlValue === 'Ano') {
+            currentDocument.borderColor = 'orange';
+            currentDocument.hasStrana4 = true;
+        } else if (entryControlValue === 'Ne') {
+            currentDocument.borderColor = 'green';
+        }
 
-        // Aktualizace dokumentu v poli podle docIndex
         if (docIndex !== null) {
             documents[docIndex] = currentDocument;
         }
-
-        // Odeslání aktualizovaného pole dokumentů na server
         socket.emit('updateDocuments', documents);
-
-        // Přesměrování na Stranu1 (přehled objednávek)
         window.location.href = 'Strana1.html';
     });
 
-    // Tlačítko "Konec" – přesměruje zpět na přehled objednávek
     endButton.addEventListener('click', function() {
         window.location.href = 'Strana1.html';
     });
