@@ -36,6 +36,7 @@ document.addEventListener('DOMContentLoaded', function() {
             var orderDiv = document.createElement('div');
             orderDiv.className = 'order';
             orderDiv.textContent = 'Dokument: ' + doc.number;
+            // Použijeme vlastnost borderColor – pokud byla nastavena na "gray", objeví se dokument šedě
             orderDiv.style.borderColor = doc.borderColor || 'blue';
             orderDiv.style.backgroundColor = doc.borderColor || 'blue';
 

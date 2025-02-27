@@ -92,7 +92,8 @@ document.addEventListener('DOMContentLoaded', function () {
     // Po navázání spojení požádáme server o aktuální dokumenty
     socket.emit('requestDocuments');
     
-    // Obsluha tlačítka "Potvrdit" – vygeneruje ZIP soubor s PDF souhrnem a přiloženými soubory
+    // Obsluha tlačítka "Potvrdit" – vygeneruje ZIP soubor s PDF souhrnem a přiloženými soubory,
+    // následně aktualizuje barvu dokumentu na šedou a přesměruje na Stranu1
     confirmButton.addEventListener('click', function (event) {
         event.preventDefault();
         if (!currentDocument) {
@@ -112,7 +113,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const attachments = currentDocument.files ? currentDocument.files.map(file => {
             return {
                 filename: file.name,
-                // Předpokládáme, že file.content je dataURL, odstraníme prefix a ponecháme jen base64 obsah
+                // Odstraníme prefix dataURL, ponecháme jen base64 obsah
                 content: file.content.split(',')[1]
             };
         }) : [];
@@ -147,6 +148,17 @@ document.addEventListener('DOMContentLoaded', function () {
             a.click();
             a.remove();
             window.URL.revokeObjectURL(url);
+            
+            // Nastavíme barvu aktuálního dokumentu na šedou
+            if (currentDocument) {
+                currentDocument.borderColor = 'gray';
+                if (docIndex !== null) {
+                    documents[docIndex] = currentDocument;
+                }
+                socket.emit('updateDocuments', documents);
+            }
+            // Přesměrujeme uživatele zpět na Stranu1
+            window.location.href = 'Strana1.html';
         })
         .catch(error => {
             console.error(error);
