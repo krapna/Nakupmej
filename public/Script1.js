@@ -55,7 +55,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (doc.hasStrana4) {
                 if (doc.borderColor === 'orange') {
                     var openBtn = document.createElement('button');
-                    openBtn.textContent = 'Strana 4';
+                    openBtn.textContent = 'Kvalita';
                     openBtn.style.backgroundColor = 'red';
                     openBtn.addEventListener('click', function() {
                         window.location.href = 'Strana4.html?docIndex=' + index;
@@ -63,7 +63,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     orderDiv.appendChild(openBtn);
                 } else if (doc.borderColor === 'green') {
                     var openBtn = document.createElement('button');
-                    openBtn.textContent = 'Strana 5';
+                    openBtn.textContent = 'K předání';
                     openBtn.style.backgroundColor = '#28a745';
                     openBtn.addEventListener('click', function() {
                         window.location.href = 'Strana5.html?docIndex=' + index;
@@ -72,7 +72,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             } else {
                 var openBtn = document.createElement('button');
-                openBtn.textContent = 'Strana 3';
+                openBtn.textContent = 'Nákup';
                 openBtn.addEventListener('click', function() {
                     window.location.href = 'Strana3.html?docIndex=' + index;
                 });
