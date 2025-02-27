@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // Globální proměnné pro dokumenty a aktuální dokument
     let documents = [];
     let currentDocument = {};
-    
+
     // Získání prvků formuláře
     const confirmButton = document.getElementById('confirmBtn');
     const endButton = document.getElementById('endBtn');
@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', function () {
     
     // Vytvoření divu pro zobrazení souhrnu formulářů
     const displayFormsDiv = document.createElement('div');
-    
+
     // Funkce pro zobrazení vyplněných formulářů
     function displayFilledForms() {
         let formData = '';
@@ -93,7 +93,7 @@ document.addEventListener('DOMContentLoaded', function () {
     socket.emit('requestDocuments');
     
     // Obsluha tlačítka "Potvrdit" – vygeneruje ZIP soubor s PDF souhrnem a přiloženými soubory,
-    // uloží jméno příjemce do dokumentu, nastaví barvu dokumentu na šedou a přesměruje na Stranu1
+    // následně aktualizuje barvu dokumentu na šedou a přesměruje na Stranu1
     confirmButton.addEventListener('click', function (event) {
         event.preventDefault();
         if (!currentDocument) {
@@ -105,9 +105,6 @@ document.addEventListener('DOMContentLoaded', function () {
             alert('Chyba: Číslo objednávky není vyplněno.');
             return;
         }
-    
-        // Uložíme jméno příjemce do aktuálního dokumentu
-        currentDocument.recipientName = recipientNameInput.value || 'Neuvedeno';
     
         // Připravíme text se souhrnem vyplněných formulářů
         const filledData = displayFormsDiv.innerText;

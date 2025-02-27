@@ -91,15 +91,6 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             orderDiv.appendChild(deleteBtn);
 
-            // Pokud je vyplněno jméno příjemce, zobrazíme jej vedle tlačítka "Odstranit"
-            if (doc.recipientName) {
-                var recipientSpan = document.createElement('span');
-                recipientSpan.textContent = ' Příjemce: ' + doc.recipientName;
-                recipientSpan.style.color = 'gray';
-                recipientSpan.style.marginLeft = '10px';
-                orderDiv.appendChild(recipientSpan);
-            }
-
             ordersDiv.appendChild(orderDiv);
         });
     }
