@@ -322,7 +322,7 @@ document.addEventListener('DOMContentLoaded', function() {
         photoPreview.innerHTML = '';
         const img = document.createElement('img');
         img.src = dataURL;
-        img.style.maxWidth = '400px';
+        img.style.maxWidth = '600px';
         img.style.cursor = 'pointer';
         img.style.marginTop = '10px';
         // Po kliknutí se obrázek otevře v nové kartě
