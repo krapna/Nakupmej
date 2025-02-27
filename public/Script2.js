@@ -99,7 +99,7 @@ document.addEventListener('DOMContentLoaded', function() {
         `;
     }
 
-    // Pomocná funkce pro zobrazení nahraných souborů
+    // Pomocná funkce pro zobrazení nahraných souborů – u souborů, které jsou obrázky, přidáme i náhled
     function addFileToList(fileName, fileContent) {
         const fileList = document.getElementById('fileList');
         const fileItem = document.createElement('div');
@@ -109,6 +109,30 @@ document.addEventListener('DOMContentLoaded', function() {
         link.textContent = fileName;
         fileItem.appendChild(link);
         fileList.appendChild(fileItem);
+
+        // Pokud se jedná o obrázek (JPEG nebo PNG) – zobrazíme malý náhled
+        if (fileContent.startsWith('data:image')) {
+            let photoPreview = document.getElementById('photoPreview');
+            if (!photoPreview) {
+                photoPreview = document.createElement('div');
+                photoPreview.id = 'photoPreview';
+                // Vložíme náhled ihned za element s id "result"
+                const resultElement = document.getElementById('result');
+                resultElement.parentNode.insertBefore(photoPreview, resultElement.nextSibling);
+            }
+            // Vymažeme předchozí obsah, pokud chceme jen jeden náhled (můžete změnit logiku pro více)
+            photoPreview.innerHTML = '';
+            const img = document.createElement('img');
+            img.src = fileContent;
+            img.style.maxWidth = '100px';
+            img.style.cursor = 'pointer';
+            img.style.marginTop = '10px';
+            // Po kliknutí se obrázek otevře v nové kartě
+            img.addEventListener('click', function() {
+                window.open(fileContent, '_blank');
+            });
+            photoPreview.appendChild(img);
+        }
     }
 
     // Obsluha nahrávání souborů přes input typu "file"
@@ -201,10 +225,9 @@ document.addEventListener('DOMContentLoaded', function() {
         window.location.href = 'Strana1.html';
     });
 
-    // Nový kód pro tlačítko "Camera"
+    // Nový kód pro tlačítko "Camera" s využitím zadní kamery a zobrazením náhledu
     const cameraBtn = document.getElementById('cameraBtn');
     cameraBtn.addEventListener('click', function() {
-        // Zkontrolujeme, zda je dostupný getUserMedia
         if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
             // Vytvoříme modal pro zobrazení videa
             const modal = document.createElement('div');
@@ -236,8 +259,9 @@ document.addEventListener('DOMContentLoaded', function() {
             // Přidáme modal do těla dokumentu
             document.body.appendChild(modal);
 
-            // Spustíme video stream z kamery
-            navigator.mediaDevices.getUserMedia({ video: true })
+            // Požadujeme video stream s preferencí zadní kamery
+            const constraints = { video: { facingMode: { ideal: "environment" } } };
+            navigator.mediaDevices.getUserMedia(constraints)
                 .then(function(stream) {
                     video.srcObject = stream;
 
@@ -249,7 +273,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-                        // Získáme data URL z canvas
+                        // Získáme data URL z canvas (JPEG)
                         const dataURL = canvas.toDataURL('image/jpeg');
 
                         // Zastavíme video stream
@@ -268,15 +292,43 @@ document.addEventListener('DOMContentLoaded', function() {
                             currentDocument.files = [];
                         }
                         currentDocument.files.push({ name: fileName, content: dataURL });
+                        // Zobrazíme také náhled fotografie pod "Celkový výsledek"
+                        showThumbnail(dataURL);
                     });
                 })
                 .catch(function(err) {
                     console.error("Chyba při přístupu ke kameře: ", err);
                     alert("Nelze získat přístup ke kameře.");
-                    document.body.removeChild(modal);
+                    if (document.body.contains(modal)) {
+                        document.body.removeChild(modal);
+                    }
                 });
         } else {
             alert("Funkce pro přístup ke kameře není podporována vaším prohlížečem.");
         }
     });
+
+    // Funkce pro zobrazení náhledu pořízené fotografie pod kolonkou "Celkový výsledek"
+    function showThumbnail(dataURL) {
+        let photoPreview = document.getElementById('photoPreview');
+        if (!photoPreview) {
+            photoPreview = document.createElement('div');
+            photoPreview.id = 'photoPreview';
+            // Vložíme náhled ihned za element s id "result"
+            const resultElement = document.getElementById('result');
+            resultElement.parentNode.insertBefore(photoPreview, resultElement.nextSibling);
+        }
+        // Pokud chceme zobrazit pouze jednu fotografii, vymažeme předchozí obsah
+        photoPreview.innerHTML = '';
+        const img = document.createElement('img');
+        img.src = dataURL;
+        img.style.maxWidth = '100px';
+        img.style.cursor = 'pointer';
+        img.style.marginTop = '10px';
+        // Po kliknutí se obrázek otevře v nové kartě
+        img.addEventListener('click', function() {
+            window.open(dataURL, '_blank');
+        });
+        photoPreview.appendChild(img);
+    }
 });
