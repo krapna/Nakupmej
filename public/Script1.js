@@ -79,12 +79,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 orderDiv.appendChild(openBtn);
             }
 
-            // Tlačítko pro odstranění dokumentu
+            // Tlačítko pro odstranění dokumentu s potvrzením
             var deleteBtn = document.createElement('button');
             deleteBtn.textContent = 'Odstranit';
             deleteBtn.addEventListener('click', function() {
-                documents.splice(index, 1);
-                socket.emit('updateDocuments', documents);
+                if (confirm("Opravdu chcete odstranit tento dokument?")) {
+                    documents.splice(index, 1);
+                    socket.emit('updateDocuments', documents);
+                }
             });
             orderDiv.appendChild(deleteBtn);
 
