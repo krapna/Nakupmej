@@ -111,7 +111,7 @@ document.addEventListener('DOMContentLoaded', function() {
         fileList.appendChild(fileItem);
     }
 
-    // Obsluha nahrávání souborů
+    // Obsluha nahrávání souborů přes input typu "file"
     const fileUpload = document.getElementById('fileUpload');
     fileUpload.addEventListener('change', function(event) {
         const files = Array.from(event.target.files);
@@ -199,5 +199,84 @@ document.addEventListener('DOMContentLoaded', function() {
     const endButton = document.getElementById('endBtn');
     endButton.addEventListener('click', function() {
         window.location.href = 'Strana1.html';
+    });
+
+    // Nový kód pro tlačítko "Camera"
+    const cameraBtn = document.getElementById('cameraBtn');
+    cameraBtn.addEventListener('click', function() {
+        // Zkontrolujeme, zda je dostupný getUserMedia
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            // Vytvoříme modal pro zobrazení videa
+            const modal = document.createElement('div');
+            modal.style.position = 'fixed';
+            modal.style.top = '0';
+            modal.style.left = '0';
+            modal.style.width = '100%';
+            modal.style.height = '100%';
+            modal.style.backgroundColor = 'rgba(0,0,0,0.8)';
+            modal.style.display = 'flex';
+            modal.style.flexDirection = 'column';
+            modal.style.justifyContent = 'center';
+            modal.style.alignItems = 'center';
+            modal.style.zIndex = '1000';
+
+            // Vytvoříme video element
+            const video = document.createElement('video');
+            video.autoplay = true;
+            video.style.width = '80%';
+            video.style.maxWidth = '500px';
+            modal.appendChild(video);
+
+            // Tlačítko pro zachycení fotografie
+            const captureBtn = document.createElement('button');
+            captureBtn.textContent = 'Pořídit fotografii';
+            captureBtn.style.marginTop = '20px';
+            modal.appendChild(captureBtn);
+
+            // Přidáme modal do těla dokumentu
+            document.body.appendChild(modal);
+
+            // Spustíme video stream z kamery
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(function(stream) {
+                    video.srcObject = stream;
+
+                    captureBtn.addEventListener('click', function() {
+                        // Vytvoříme canvas pro zachycení snímku
+                        const canvas = document.createElement('canvas');
+                        canvas.width = video.videoWidth;
+                        canvas.height = video.videoHeight;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                        // Získáme data URL z canvas
+                        const dataURL = canvas.toDataURL('image/jpeg');
+
+                        // Zastavíme video stream
+                        stream.getTracks().forEach(track => track.stop());
+
+                        // Odstraníme modal
+                        document.body.removeChild(modal);
+
+                        // Získáme hodnotu z pole "Číslo dokumentu" pro název fotografie
+                        const documentNumber = document.getElementById('documentNumber').value;
+                        const fileName = documentNumber ? `${documentNumber}.jpg` : 'photo.jpg';
+
+                        // Přidáme fotografii do seznamu nahraných souborů
+                        addFileToList(fileName, dataURL);
+                        if (!currentDocument.files) {
+                            currentDocument.files = [];
+                        }
+                        currentDocument.files.push({ name: fileName, content: dataURL });
+                    });
+                })
+                .catch(function(err) {
+                    console.error("Chyba při přístupu ke kameře: ", err);
+                    alert("Nelze získat přístup ke kameře.");
+                    document.body.removeChild(modal);
+                });
+        } else {
+            alert("Funkce pro přístup ke kameře není podporována vaším prohlížečem.");
+        }
     });
 });
