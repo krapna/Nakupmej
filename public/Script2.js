@@ -124,7 +124,7 @@ document.addEventListener('DOMContentLoaded', function() {
             photoPreview.innerHTML = '';
             const img = document.createElement('img');
             img.src = fileContent;
-            img.style.maxWidth = '100px';
+            img.style.maxWidth = '300px';
             img.style.cursor = 'pointer';
             img.style.marginTop = '10px';
             // Po kliknutí se obrázek otevře v nové kartě
@@ -322,7 +322,7 @@ document.addEventListener('DOMContentLoaded', function() {
         photoPreview.innerHTML = '';
         const img = document.createElement('img');
         img.src = dataURL;
-        img.style.maxWidth = '100px';
+        img.style.maxWidth = '300px';
         img.style.cursor = 'pointer';
         img.style.marginTop = '10px';
         // Po kliknutí se obrázek otevře v nové kartě
