@@ -35,15 +35,8 @@ document.addEventListener('DOMContentLoaded', function() {
         documents.forEach(function(doc, index) {
             var orderDiv = document.createElement('div');
             orderDiv.className = 'order';
-            
-            // Sestavení textu: číslo dokumentu, a pokud je dokument šedý a má vyplněné jméno příjemce, přidáme text
-            var docText = 'Dokument: ' + doc.number;
-            if (doc.borderColor === 'gray' && doc.recipientName) {
-                docText += ' ' + doc.recipientName;
-            }
-            orderDiv.textContent = docText;
-            
-            // Použijeme vlastnost borderColor – pokud byla nastavena, dokument se zobrazí příslušně
+            orderDiv.textContent = 'Dokument: ' + doc.number;
+            // Použijeme vlastnost borderColor – pokud byla nastavena na "gray", objeví se dokument šedě
             orderDiv.style.borderColor = doc.borderColor || 'blue';
             orderDiv.style.backgroundColor = doc.borderColor || 'blue';
 
