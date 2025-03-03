@@ -35,16 +35,8 @@ document.addEventListener('DOMContentLoaded', function() {
         documents.forEach(function(doc, index) {
             var orderDiv = document.createElement('div');
             orderDiv.className = 'order';
-            
-            // Sestavení textu s číslem dokumentu
-            var docText = 'Dokument: ' + doc.number;
-            // Pokud je dokument dokončený (šedý) a je vyplněno jméno příjemce, přidáme text za mezeru
-            if (doc.borderColor === 'gray' && doc.recipientName) {
-                docText += ' ' + doc.recipientName;
-            }
-            orderDiv.textContent = docText;
-            
-            // Použijeme vlastnost borderColor – pokud byla nastavena, dokument se zobrazí příslušně
+            orderDiv.textContent = 'Dokument: ' + doc.number;
+            // Použijeme vlastnost borderColor – pokud byla nastavena na "gray", objeví se dokument šedě
             orderDiv.style.borderColor = doc.borderColor || 'blue';
             orderDiv.style.backgroundColor = doc.borderColor || 'blue';
 
@@ -98,14 +90,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
             orderDiv.appendChild(deleteBtn);
-
-            // Přidáme extra tlačítko s textem jména příjemce, pokud je dokument dokončený (šedý)
-            if (doc.borderColor === 'gray' && doc.recipientName) {
-                var recipientBtn = document.createElement('button');
-                recipientBtn.textContent = doc.recipientName;
-                // Můžeš zde nastavit další styl nebo funkcionalitu pro toto tlačítko
-                orderDiv.appendChild(recipientBtn);
-            }
 
             ordersDiv.appendChild(orderDiv);
         });
