@@ -57,12 +57,12 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Pomocná funkce pro zobrazení nahraných souborů
+    // Pomocná funkce pro zobrazení nahraných souborů – s atributem download
     function addFileToList(fileName, fileContent) {
         const fileItem = document.createElement('div');
         const link = document.createElement('a');
         link.href = fileContent;
-        link.target = '_blank';
+        link.download = fileName;
         link.textContent = fileName;
         fileItem.appendChild(link);
         fileList.appendChild(fileItem);
@@ -87,7 +87,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Při obdržení synchronizovaných dokumentů ze serveru se aktualizují data
+    // Při obdržení synchronizovaných dokumentů ze serveru
     document.addEventListener('documentsUpdated', function(event) {
         documents = event.detail;
         if (docIndex !== null && documents[docIndex]) {
@@ -98,7 +98,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     socket.emit('requestDocuments');
 
-    // Obsluha tlačítka "Hotovo" – zpracování formuláře a nastavení logiky vstupní kontroly
+    // Obsluha tlačítka "Hotovo" – zpracování formuláře
     saveButton.addEventListener('click', function(event) {
         event.preventDefault();
         const entryControlValue = document.querySelector('input[name="entryControl"]:checked')?.value;
@@ -120,19 +120,13 @@ document.addEventListener('DOMContentLoaded', function() {
         currentDocument.goodsType = goodsTypeChecked;
         currentDocument.note = document.getElementById('note').value;
 
-        // Zde nyní nastavíme v obou případech (Ano i Ne) příznak hasStrana4 = true,
-        // aby na Straně1 byl zobrazen tlačítko pro Stranu5, když je vstupní kontrola hotová.
-        if (entryControlValue === 'Ano') {
-            currentDocument.borderColor = 'orange';
-            currentDocument.hasStrana4 = true;
-        } else if (entryControlValue === 'Ne') {
-            currentDocument.borderColor = 'green';
-            currentDocument.hasStrana4 = true;
-        }
-
-        if (docIndex !== null) {
+        if (docIndex === null) {
+            documents.push(currentDocument);
+            docIndex = documents.length - 1;
+        } else {
             documents[docIndex] = currentDocument;
         }
+
         socket.emit('updateDocuments', documents);
         window.location.href = 'Strana1.html';
     });

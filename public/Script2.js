@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // Inicializace socket.io – předpokládáme, že onlineserv.js již vytvořil socket a případně jej uloženého do window.socket
+    // Inicializace socket.io – předpokládáme, že onlineserv.js již vytvořil socket a uloženého do window.socket
     const socket = window.socket || io();
 
     // Získání parametru docIndex z URL (pokud existuje)
@@ -8,10 +8,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Globální pole dokumentů (budou synchronizovány se serverem)
     let documents = [];
-    // Aktuální dokument – pokud docIndex existuje, bude později načten ze sdíleného pole, jinak nový prázdný objekt
+    // Aktuální dokument – pokud docIndex existuje, bude načten ze sdíleného pole, jinak nový prázdný objekt
     let currentDocument = docIndex !== null ? null : {};
 
-    // Funkce pro načtení dat aktuálního dokumentu do formuláře (část Strana2)
+    // Funkce pro načtení dat aktuálního dokumentu do formuláře (Strana2)
     function loadFormData() {
         if (!currentDocument) return;
         document.getElementById('documentNumber').value = currentDocument.number || '';
@@ -99,37 +99,38 @@ document.addEventListener('DOMContentLoaded', function() {
         `;
     }
 
-    // Pomocná funkce pro zobrazení nahraných souborů – u souborů, které jsou obrázky, přidáme i náhled
+    // Pomocná funkce pro zobrazení nahraných souborů – nyní s atributem download
     function addFileToList(fileName, fileContent) {
         const fileList = document.getElementById('fileList');
         const fileItem = document.createElement('div');
         const link = document.createElement('a');
         link.href = fileContent;
-        link.target = '_blank';
+        link.download = fileName; // Přidá atribut download
         link.textContent = fileName;
         fileItem.appendChild(link);
         fileList.appendChild(fileItem);
 
-        // Pokud se jedná o obrázek (JPEG nebo PNG) – zobrazíme malý náhled
+        // Pokud se jedná o obrázek (JPEG nebo PNG) – zobrazíme také náhled
         if (fileContent.startsWith('data:image')) {
             let photoPreview = document.getElementById('photoPreview');
             if (!photoPreview) {
                 photoPreview = document.createElement('div');
                 photoPreview.id = 'photoPreview';
-                // Vložíme náhled ihned za element s id "result"
                 const resultElement = document.getElementById('result');
                 resultElement.parentNode.insertBefore(photoPreview, resultElement.nextSibling);
             }
-            // Vymažeme předchozí obsah, pokud chceme jen jeden náhled (můžete změnit logiku pro více)
             photoPreview.innerHTML = '';
             const img = document.createElement('img');
             img.src = fileContent;
             img.style.maxWidth = '300px';
             img.style.cursor = 'pointer';
             img.style.marginTop = '10px';
-            // Po kliknutí se obrázek otevře v nové kartě
+            // Při kliknutí se obrázek stáhne
             img.addEventListener('click', function() {
-                window.open(fileContent, '_blank');
+                const a = document.createElement('a');
+                a.href = fileContent;
+                a.download = fileName;
+                a.click();
             });
             photoPreview.appendChild(img);
         }
@@ -155,29 +156,23 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Při obdržení synchronizovaných dokumentů ze serveru aktualizujeme naše lokální pole
+    // Při obdržení synchronizovaných dokumentů ze serveru aktualizujeme lokální pole
     document.addEventListener('documentsUpdated', function(event) {
         documents = event.detail;
-        // Pokud docIndex byl předán a odpovídající dokument existuje, nastavíme currentDocument
         if (docIndex !== null && documents[docIndex]) {
             currentDocument = documents[docIndex];
         } else if (docIndex === null) {
-            // Nový dokument – pokud currentDocument ještě nebyl vytvořen, vytvoříme prázdný objekt
-            if (!currentDocument) {
-                currentDocument = {};
-            }
+            if (!currentDocument) { currentDocument = {}; }
         }
         loadFormData();
     });
 
-    // Po navázání spojení požádáme server o aktuální dokumenty
     socket.emit('requestDocuments');
 
     // Obsluha tlačítka "Hotovo" – uložení formuláře
     const saveButton = document.getElementById('saveBtn');
     saveButton.addEventListener('click', function(event) {
         event.preventDefault();
-
         // Shromáždění dat ze Strany2
         currentDocument.number = document.getElementById('documentNumber').value;
         currentDocument.supplier = document.getElementById('supplier').value;
@@ -194,7 +189,7 @@ document.addEventListener('DOMContentLoaded', function() {
         currentDocument.date = document.getElementById('date').value;
         currentDocument.result = document.getElementById('result').value;
 
-        // Shromáždění dat z dynamicky vloženého formuláře (část Strany3)
+        // Shromáždění dat z formuláře Strany3
         currentDocument.orderNumber = document.getElementById('orderNumber').value;
         currentDocument.confirmedDeliveryDate = document.getElementById('confirmedDeliveryDate').value;
         currentDocument.deliveryDate = document.getElementById('deliveryDate').value;
@@ -204,7 +199,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const goodsTypeChecked = Array.from(document.querySelectorAll('input[name="goodsType"]:checked')).map(el => el.value);
         currentDocument.goodsType = goodsTypeChecked;
 
-        // Pokud se jedná o nový dokument, přidáme ho do sdíleného pole; pokud existuje, aktualizujeme jej
         if (docIndex === null) {
             documents.push(currentDocument);
             docIndex = documents.length - 1;
@@ -212,14 +206,11 @@ document.addEventListener('DOMContentLoaded', function() {
             documents[docIndex] = currentDocument;
         }
 
-        // Odeslání aktualizovaného pole dokumentů na server pro synchronizaci v reálném čase
         socket.emit('updateDocuments', documents);
-
-        // Přesměrování zpět na Stranu1 (přehled objednávek)
         window.location.href = 'Strana1.html';
     });
 
-    // Obsluha tlačítka "Konec" – přesměrování zpět na přehled
+    // Obsluha tlačítka "Konec" – přesměrování zpět na Stranu1
     const endButton = document.getElementById('endBtn');
     endButton.addEventListener('click', function() {
         window.location.href = 'Strana1.html';
@@ -256,7 +247,6 @@ document.addEventListener('DOMContentLoaded', function() {
             captureBtn.style.marginTop = '20px';
             modal.appendChild(captureBtn);
 
-            // Přidáme modal do těla dokumentu
             document.body.appendChild(modal);
 
             // Požadujeme video stream s preferencí zadní kamery
@@ -264,36 +254,24 @@ document.addEventListener('DOMContentLoaded', function() {
             navigator.mediaDevices.getUserMedia(constraints)
                 .then(function(stream) {
                     video.srcObject = stream;
-
                     captureBtn.addEventListener('click', function() {
-                        // Vytvoříme canvas pro zachycení snímku
                         const canvas = document.createElement('canvas');
                         canvas.width = video.videoWidth;
                         canvas.height = video.videoHeight;
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-                        // Získáme data URL z canvas (JPEG)
                         const dataURL = canvas.toDataURL('image/jpeg');
-
-                        // Zastavíme video stream
                         stream.getTracks().forEach(track => track.stop());
-
-                        // Odstraníme modal
                         document.body.removeChild(modal);
-
-                        // Získáme hodnotu z pole "Číslo dokumentu" pro název fotografie
                         const documentNumber = document.getElementById('documentNumber').value;
                         const fileName = documentNumber ? `${documentNumber}.jpg` : 'photo.jpg';
-
-                        // Přidáme fotografii do seznamu nahraných souborů
                         addFileToList(fileName, dataURL);
                         if (!currentDocument.files) {
                             currentDocument.files = [];
                         }
                         currentDocument.files.push({ name: fileName, content: dataURL });
                         // Zobrazíme také náhled fotografie pod "Celkový výsledek"
-                        showThumbnail(dataURL);
+                        showThumbnail(dataURL, fileName);
                     });
                 })
                 .catch(function(err) {
@@ -309,25 +287,25 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Funkce pro zobrazení náhledu pořízené fotografie pod kolonkou "Celkový výsledek"
-    function showThumbnail(dataURL) {
+    function showThumbnail(dataURL, fileName) {
         let photoPreview = document.getElementById('photoPreview');
         if (!photoPreview) {
             photoPreview = document.createElement('div');
             photoPreview.id = 'photoPreview';
-            // Vložíme náhled ihned za element s id "result"
             const resultElement = document.getElementById('result');
             resultElement.parentNode.insertBefore(photoPreview, resultElement.nextSibling);
         }
-        // Pokud chceme zobrazit pouze jednu fotografii, vymažeme předchozí obsah
         photoPreview.innerHTML = '';
         const img = document.createElement('img');
         img.src = dataURL;
         img.style.maxWidth = '600px';
         img.style.cursor = 'pointer';
         img.style.marginTop = '10px';
-        // Po kliknutí se obrázek otevře v nové kartě
         img.addEventListener('click', function() {
-            window.open(dataURL, '_blank');
+            const a = document.createElement('a');
+            a.href = dataURL;
+            a.download = fileName;
+            a.click();
         });
         photoPreview.appendChild(img);
     }
