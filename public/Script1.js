@@ -48,11 +48,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             orderDiv.appendChild(viewBtn);
 
-            // Rozhodneme, které tlačítko zobrazit dle vstupní kontroly:
-            // Pokud je provedena vstupní kontrola (hasStrana4 === true):
-            //   - Pokud borderColor je "orange" => tlačítko pro Stranu4 (kontrola probíhá)
-            //   - Pokud borderColor je "green"  => tlačítko pro Stranu5 (kontrola dokončena)
-            // Jinak => tlačítko pro Stranu3.
+            // Podle vstupní kontroly zobrazíme další tlačítka
             if (doc.hasStrana4) {
                 if (doc.borderColor === 'orange') {
                     var openBtn = document.createElement('button');
@@ -91,12 +87,11 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             orderDiv.appendChild(deleteBtn);
 
-            // Pokud je dokument dokončený (borderColor === "gray") a má vyplněné pole jméno příjemce,
-            // přidáme extra tlačítko s textem z tohoto pole.
+            // Pokud je dokument dokončený (borderColor === "gray") a má vyplněné pole recipientName,
+            // přidáme extra tlačítko s textem z tohoto pole (informační, neaktivní)
             if (doc.borderColor === 'gray' && doc.recipientName) {
                 var recipientBtn = document.createElement('button');
                 recipientBtn.textContent = doc.recipientName;
-                // Nastavíme styl – např. šedé pozadí, bílý text, menší velikost; tlačítko nebude aktivní
                 recipientBtn.style.backgroundColor = 'gray';
                 recipientBtn.style.color = 'white';
                 recipientBtn.style.border = 'none';

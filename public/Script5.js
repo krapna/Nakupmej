@@ -62,13 +62,13 @@ document.addEventListener('DOMContentLoaded', function () {
                 formData += `Výsledek: ${currentDocument.result || ''}\n\n`;
             }
             
-            // Přidání jména příjemce
+            // Přidání jména příjemce – z formuláře Strany 5
             formData += `Jméno příjemce: ${recipientNameInput.value || 'Neuvedeno'}\n`;
         }
         displayFormsDiv.innerText = formData;
     }
     
-    // Přidáme displayFormsDiv do dokumentu (můžeš jej případně umístit do určitého kontejneru)
+    // Přidáme displayFormsDiv do dokumentu (můžeš jej umístit kamkoliv, např. na konec body)
     document.body.appendChild(displayFormsDiv);
     displayFilledForms();
     
@@ -92,8 +92,8 @@ document.addEventListener('DOMContentLoaded', function () {
     // Po navázání spojení požádáme server o aktuální dokumenty
     socket.emit('requestDocuments');
     
-    // Obsluha tlačítka "Potvrdit" – vygeneruje ZIP soubor s PDF souhrnem a přiloženými soubory,
-    // následně aktualizuje barvu dokumentu na šedou a přesměruje na Stranu1
+    // Obsluha tlačítka "Potvrdit" – před generováním ZIP souboru:
+    // Uložíme do aktuálního dokumentu hodnotu z pole "Jméno příjemce", nastavíme barvu dokumentu na šedou a poté vygenerujeme ZIP
     confirmButton.addEventListener('click', function (event) {
         event.preventDefault();
         if (!currentDocument) {
@@ -106,6 +106,9 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
     
+        // Uložíme jméno příjemce z pole do aktuálního dokumentu
+        currentDocument.recipientName = recipientNameInput.value || 'Neuvedeno';
+    
         // Připravíme text se souhrnem vyplněných formulářů
         const filledData = displayFormsDiv.innerText;
     
@@ -113,8 +116,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const attachments = currentDocument.files ? currentDocument.files.map(file => {
             return {
                 filename: file.name,
-                // Odstraníme prefix dataURL, ponecháme jen base64 obsah
-                content: file.content.split(',')[1]
+                content: file.content.split(',')[1] // odstraníme prefix dataURL
             };
         }) : [];
     
@@ -166,7 +168,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
     
-    // Obsluha tlačítka "Konec" – přesměruje zpět na přehled objednávek (Strana1)
+    // Obsluha tlačítka "Konec" – přesměruje zpět na Stranu1
     endButton.addEventListener('click', function () {
         window.location.href = 'Strana1.html';
     });
