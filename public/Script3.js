@@ -57,12 +57,12 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Pomocná funkce pro zobrazení nahraných souborů
+    // Pomocná funkce pro zobrazení nahraných souborů – nyní s atributem download (soubor se stáhne po kliknutí)
     function addFileToList(fileName, fileContent) {
         const fileItem = document.createElement('div');
         const link = document.createElement('a');
         link.href = fileContent;
-        link.target = '_blank';
+        link.download = fileName; // Atribut download způsobí stažení souboru
         link.textContent = fileName;
         fileItem.appendChild(link);
         fileList.appendChild(fileItem);
@@ -120,19 +120,13 @@ document.addEventListener('DOMContentLoaded', function() {
         currentDocument.goodsType = goodsTypeChecked;
         currentDocument.note = document.getElementById('note').value;
 
-        // Zde nyní nastavíme v obou případech (Ano i Ne) příznak hasStrana4 = true,
-        // aby na Straně1 byl zobrazen tlačítko pro Stranu5, když je vstupní kontrola hotová.
-        if (entryControlValue === 'Ano') {
-            currentDocument.borderColor = 'orange';
-            currentDocument.hasStrana4 = true;
-        } else if (entryControlValue === 'Ne') {
-            currentDocument.borderColor = 'green';
-            currentDocument.hasStrana4 = true;
-        }
-
-        if (docIndex !== null) {
+        if (docIndex === null) {
+            documents.push(currentDocument);
+            docIndex = documents.length - 1;
+        } else {
             documents[docIndex] = currentDocument;
         }
+
         socket.emit('updateDocuments', documents);
         window.location.href = 'Strana1.html';
     });
