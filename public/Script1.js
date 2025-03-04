@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', function() {
             var orderDiv = document.createElement('div');
             orderDiv.className = 'order';
             orderDiv.textContent = 'Dokument: ' + doc.number;
-            // Použijeme vlastnost borderColor – pokud byla nastavena, dokument se zobrazí příslušně
+            // Použijeme vlastnost borderColor – pokud byla nastavena na "gray", objeví se dokument šedě
             orderDiv.style.borderColor = doc.borderColor || 'blue';
             orderDiv.style.backgroundColor = doc.borderColor || 'blue';
 
@@ -90,20 +90,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
             orderDiv.appendChild(deleteBtn);
-
-            // Pokud je dokument dokončený (borderColor === "gray") a má vyplněné pole jméno příjemce,
-            // přidáme extra tlačítko s textem z tohoto pole.
-            if (doc.borderColor === 'gray' && doc.recipientName) {
-                var recipientBtn = document.createElement('button');
-                recipientBtn.textContent = doc.recipientName;
-                // Nastavíme styl – např. šedé pozadí, bílý text, menší velikost; tlačítko nebude aktivní
-                recipientBtn.style.backgroundColor = 'gray';
-                recipientBtn.style.color = 'white';
-                recipientBtn.style.border = 'none';
-                recipientBtn.style.cursor = 'default';
-                recipientBtn.disabled = true;
-                orderDiv.appendChild(recipientBtn);
-            }
 
             ordersDiv.appendChild(orderDiv);
         });
