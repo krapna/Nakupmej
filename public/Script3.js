@@ -120,13 +120,19 @@ document.addEventListener('DOMContentLoaded', function() {
         currentDocument.goodsType = goodsTypeChecked;
         currentDocument.note = document.getElementById('note').value;
 
-        if (docIndex === null) {
-            documents.push(currentDocument);
-            docIndex = documents.length - 1;
-        } else {
-            documents[docIndex] = currentDocument;
+        // Zde nyní nastavíme v obou případech (Ano i Ne) příznak hasStrana4 = true,
+        // aby na Straně1 byl zobrazen tlačítko pro Stranu5, když je vstupní kontrola hotová.
+        if (entryControlValue === 'Ano') {
+            currentDocument.borderColor = 'orange';
+            currentDocument.hasStrana4 = true;
+        } else if (entryControlValue === 'Ne') {
+            currentDocument.borderColor = 'green';
+            currentDocument.hasStrana4 = true;
         }
 
+        if (docIndex !== null) {
+            documents[docIndex] = currentDocument;
+        }
         socket.emit('updateDocuments', documents);
         window.location.href = 'Strana1.html';
     });
