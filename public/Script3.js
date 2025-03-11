@@ -26,6 +26,9 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('deliveryDate').value = currentDocument.deliveryDate || '';
         document.getElementById('price').value = currentDocument.price || '';
 
+        // Nová část: načtení hodnoty příjemce z Strany3
+        document.getElementById('recipientFromStrana3').value = currentDocument.recipientName || '';
+
         if (currentDocument.timeliness) {
             const t = document.querySelector(`input[name="timeliness"][value="${currentDocument.timeliness}"]`);
             if (t) t.checked = true;
@@ -57,12 +60,64 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Pomocná funkce pro zobrazení nahraných souborů – nyní s atributem download (soubor se stáhne po kliknutí)
+    // Dynamické vložení formuláře ze "Strany 3" do divu s id="form3Container"
+    function loadForm3() {
+        const form3Container = document.getElementById('form3Container');
+        form3Container.innerHTML = `
+            <div class="form-group">
+                <label for="orderNumber">Číslo objednávky</label>
+                <input type="text" id="orderNumber" name="orderNumber" value="${currentDocument && currentDocument.orderNumber ? currentDocument.orderNumber : ''}">
+            </div>
+            <div class="form-group">
+                <label for="orderSupplier">Dodavatel</label>
+                <input type="text" id="orderSupplier" name="orderSupplier" value="${currentDocument && currentDocument.supplier ? currentDocument.supplier : ''}">
+            </div>
+            <div class="form-group">
+                <label for="confirmedDeliveryDate">Potvrzené datum dodání</label>
+                <input type="date" id="confirmedDeliveryDate" name="confirmedDeliveryDate" value="${currentDocument && currentDocument.confirmedDeliveryDate ? currentDocument.confirmedDeliveryDate : ''}">
+            </div>
+            <div class="form-group">
+                <label for="deliveryDate">Datum dodání</label>
+                <input type="date" id="deliveryDate" name="deliveryDate" value="${currentDocument && currentDocument.deliveryDate ? currentDocument.deliveryDate : ''}">
+            </div>
+            <div class="form-group">
+                <label>Včasnost dodávky</label>
+                <div>
+                    <label><input type="radio" name="timeliness" value="OK" ${currentDocument && currentDocument.timeliness === 'OK' ? 'checked' : ''}> OK</label>
+                    <label><input type="radio" name="timeliness" value="NOK" ${currentDocument && currentDocument.timeliness === 'NOK' ? 'checked' : ''}> NOK</label>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Kontrola vůči systému (úplnost, cena...)</label>
+                <div>
+                    <label><input type="radio" name="systemCheck" value="1" ${currentDocument && currentDocument.systemCheck === '1' ? 'checked' : ''}> 1</label>
+                    <label><input type="radio" name="systemCheck" value="2" ${currentDocument && currentDocument.systemCheck === '2' ? 'checked' : ''}> 2</label>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Komunikace s dodavatelem</label>
+                <div>
+                    <label><input type="radio" name="communication" value="1" ${currentDocument && currentDocument.communication === '1' ? 'checked' : ''}> 1</label>
+                    <label><input type="radio" name="communication" value="2" ${currentDocument && currentDocument.communication === '2' ? 'checked' : ''}> 2</label>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Druh zboží</label>
+                <div>
+                    <label><input type="checkbox" name="goodsType" value="Výrobní" ${(currentDocument && currentDocument.goodsType && currentDocument.goodsType.includes('Výrobní')) ? 'checked' : ''}> Výrobní</label>
+                    <label><input type="checkbox" name="goodsType" value="Ostatní" ${(currentDocument && currentDocument.goodsType && currentDocument.goodsType.includes('Ostatní')) ? 'checked' : ''}> Ostatní</label>
+                </div>
+            </div>
+        `;
+    }
+
+    // Pomocná funkce pro zobrazení nahraných souborů – nyní s atributem download
     function addFileToList(fileName, fileContent) {
+        const fileList = document.getElementById('fileList');
         const fileItem = document.createElement('div');
         const link = document.createElement('a');
         link.href = fileContent;
-        link.download = fileName; // Atribut download způsobí stažení souboru
+        link.download = fileName; // Soubor se stáhne po kliknutí
         link.textContent = fileName;
         fileItem.appendChild(link);
         fileList.appendChild(fileItem);
@@ -87,56 +142,65 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Při obdržení synchronizovaných dokumentů ze serveru se aktualizují data
+    // Při obdržení synchronizovaných dokumentů ze serveru aktualizujeme data
     document.addEventListener('documentsUpdated', function(event) {
         documents = event.detail;
         if (docIndex !== null && documents[docIndex]) {
             currentDocument = documents[docIndex];
+        } else if (docIndex === null) {
+            if (!currentDocument) { currentDocument = {}; }
         }
         loadFormData();
     });
 
     socket.emit('requestDocuments');
 
-    // Obsluha tlačítka "Hotovo" – zpracování formuláře a nastavení logiky vstupní kontroly
+    // Obsluha tlačítka "Hotovo" – uložení formuláře
+    const saveButton = document.getElementById('saveBtn');
     saveButton.addEventListener('click', function(event) {
         event.preventDefault();
-        const entryControlValue = document.querySelector('input[name="entryControl"]:checked')?.value;
-        if (!entryControlValue) {
-            alert("Vyberte prosím možnost pod 'Vstupní kontrola'");
-            return;
-        }
-        
-        currentDocument.entryControl = entryControlValue;
-        currentDocument.orderNumber = document.getElementById('orderNumber').value;
+        // Shromáždění dat ze Strany2
+        currentDocument.number = document.getElementById('documentNumber').value;
         currentDocument.supplier = document.getElementById('supplier').value;
+        const packagingStatus = document.querySelector('input[name="packagingStatus"]:checked')?.value;
+        if (packagingStatus) currentDocument.packagingStatus = packagingStatus;
+        const packageLabel = document.querySelector('input[name="packageLabel"]:checked')?.value;
+        if (packageLabel) currentDocument.packageLabel = packageLabel;
+        const deliveryMatch = document.querySelector('input[name="deliveryMatch"]:checked')?.value;
+        if (deliveryMatch) currentDocument.deliveryMatch = deliveryMatch;
+        const docsChecked = Array.from(document.querySelectorAll('input[name="documents"]:checked')).map(el => el.value);
+        currentDocument.documents = docsChecked;
+        currentDocument.note = document.getElementById('note').value;
+        currentDocument.controlBy = document.getElementById('controlBy').value;
+        currentDocument.date = document.getElementById('date').value;
+        currentDocument.result = document.getElementById('result').value;
+
+        // Shromáždění dat z formuláře Strany3
+        currentDocument.orderNumber = document.getElementById('orderNumber').value;
         currentDocument.confirmedDeliveryDate = document.getElementById('confirmedDeliveryDate').value;
         currentDocument.deliveryDate = document.getElementById('deliveryDate').value;
-        currentDocument.price = document.getElementById('price').value;
         currentDocument.timeliness = document.querySelector('input[name="timeliness"]:checked')?.value;
         currentDocument.systemCheck = document.querySelector('input[name="systemCheck"]:checked')?.value;
         currentDocument.communication = document.querySelector('input[name="communication"]:checked')?.value;
         const goodsTypeChecked = Array.from(document.querySelectorAll('input[name="goodsType"]:checked')).map(el => el.value);
         currentDocument.goodsType = goodsTypeChecked;
-        currentDocument.note = document.getElementById('note').value;
 
-        // Zde nyní nastavíme v obou případech (Ano i Ne) příznak hasStrana4 = true,
-        // aby na Straně1 byl zobrazen tlačítko pro Stranu5, když je vstupní kontrola hotová.
-        if (entryControlValue === 'Ano') {
-            currentDocument.borderColor = 'orange';
-            currentDocument.hasStrana4 = true;
-        } else if (entryControlValue === 'Ne') {
-            currentDocument.borderColor = 'green';
-            currentDocument.hasStrana4 = true;
-        }
+        // Uložení hodnoty z nového pole Příjemce
+        currentDocument.recipientName = document.getElementById('recipientFromStrana3').value || '';
 
-        if (docIndex !== null) {
+        if (docIndex === null) {
+            documents.push(currentDocument);
+            docIndex = documents.length - 1;
+        } else {
             documents[docIndex] = currentDocument;
         }
+
         socket.emit('updateDocuments', documents);
         window.location.href = 'Strana1.html';
     });
 
+    // Obsluha tlačítka "Konec" – přesměrování zpět na Stranu1
+    const endButton = document.getElementById('endBtn');
     endButton.addEventListener('click', function() {
         window.location.href = 'Strana1.html';
     });
