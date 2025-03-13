@@ -85,6 +85,10 @@ document.addEventListener('DOMContentLoaded', function () {
             if (currentDocument.number) {
                 orderNumberInput.value = currentDocument.number;
             }
+            // NOVÝ řádek – předvyplnění jména příjemce, pokud existuje
+            if (currentDocument.recipientName) {
+                recipientNameInput.value = currentDocument.recipientName;
+        }
             displayFilledForms();
         }
     });
