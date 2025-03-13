@@ -113,6 +113,7 @@ document.addEventListener('DOMContentLoaded', function() {
         currentDocument.confirmedDeliveryDate = document.getElementById('confirmedDeliveryDate').value;
         currentDocument.deliveryDate = document.getElementById('deliveryDate').value;
         currentDocument.price = document.getElementById('price').value;
+        currentDocument.recipientName = document.getElementById('recipientName').value;
         currentDocument.timeliness = document.querySelector('input[name="timeliness"]:checked')?.value;
         currentDocument.systemCheck = document.querySelector('input[name="systemCheck"]:checked')?.value;
         currentDocument.communication = document.querySelector('input[name="communication"]:checked')?.value;

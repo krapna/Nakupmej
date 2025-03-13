@@ -89,7 +89,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Pokud je dokument dokončený (borderColor === "gray") a má vyplněné pole recipientName,
             // přidáme extra tlačítko s textem z tohoto pole (informační, neaktivní)
-            if (doc.borderColor === 'gray' && doc.recipientName) {
+            if ((doc.borderColor === 'gray' || doc.borderColor === 'green') && doc.recipientName) {
                 var recipientBtn = document.createElement('button');
                 recipientBtn.textContent = doc.recipientName;
                 recipientBtn.style.backgroundColor = 'gray';
