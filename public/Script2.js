@@ -264,7 +264,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         canvas.height = video.videoHeight;
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                        const dataURL = canvas.toDataURL('image/jpeg', 0.97);
+                        const dataURL = canvas.toDataURL('image/jpeg', 0.90);
                         stream.getTracks().forEach(track => track.stop());
                         document.body.removeChild(modal);
                         const documentNumber = document.getElementById('documentNumber').value;
