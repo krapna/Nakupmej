@@ -251,8 +251,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Požadujeme video stream s preferencí zadní kamery
             const constraints = { video: { facingMode: { ideal: "environment" },
-                                          width: { ideal: 1280 },
-                                            height: { ideal: 720 }  
+                                          width: { ideal: 1920 },
+                                            height: { ideal: 1080 }  
                                          } 
         };
             navigator.mediaDevices.getUserMedia(constraints)
