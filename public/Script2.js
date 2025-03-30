@@ -105,13 +105,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const fileItem = document.createElement('div');
         const link = document.createElement('a');
         link.href = fileContent;
-        link.download = fileName; // Přidá atribut download
+        link.download = fileName; // Atribut download způsobí stažení souboru
         link.textContent = fileName;
         fileItem.appendChild(link);
         fileList.appendChild(fileItem);
 
         // Pokud se jedná o obrázek (JPEG nebo PNG) – zobrazíme také náhled
-        if (fileContent.startsWith('data:image')) {
+        if (fileContent.startsWith('data:image') || fileContent.startsWith('http')) {
             let photoPreview = document.getElementById('photoPreview');
             if (!photoPreview) {
                 photoPreview = document.createElement('div');
@@ -144,13 +144,35 @@ document.addEventListener('DOMContentLoaded', function() {
         files.forEach(function(file) {
             const reader = new FileReader();
             reader.onload = function(e) {
-                const fileContent = e.target.result;
+                const dataURL = e.target.result;
+                // Odstraníme prefix "data:image/jpeg;base64," atd.
+                const base64Data = dataURL.split(',')[1];
                 const fileName = documentNumber ? `${documentNumber}_${file.name}` : file.name;
-                addFileToList(fileName, fileContent);
-                if (!currentDocument.files) {
-                    currentDocument.files = [];
-                }
-                currentDocument.files.push({ name: fileName, content: fileContent });
+
+                // Odeslání souboru na Dropbox pomocí našeho endpointu
+                fetch('/uploadToDropbox', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ base64Data, fileName })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // data.link obsahuje odkaz na soubor v Dropboxu
+                        addFileToList(fileName, data.link);
+                        if (!currentDocument.files) {
+                            currentDocument.files = [];
+                        }
+                        currentDocument.files.push({ name: fileName, content: data.link });
+                    } else {
+                        console.error('Upload do Dropboxu selhal:', data.error);
+                        alert('Upload do Dropboxu selhal: ' + data.error);
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    alert('Chyba při uploadu souboru.');
+                });
             };
             reader.readAsDataURL(file);
         });
@@ -252,9 +274,9 @@ document.addEventListener('DOMContentLoaded', function() {
             // Požadujeme video stream s preferencí zadní kamery
             const constraints = { video: { facingMode: { ideal: "environment" },
                                           width: { ideal: 1920 },
-                                            height: { ideal: 1080 }  
+                                          height: { ideal: 1080 }  
                                          } 
-        };
+            };
             navigator.mediaDevices.getUserMedia(constraints)
                 .then(function(stream) {
                     video.srcObject = stream;

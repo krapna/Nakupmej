@@ -7,6 +7,10 @@ const archiver = require('archiver');
 const http = require('http');
 const socketIo = require('socket.io');
 
+// Přidání Dropbox SDK a node-fetch
+const { Dropbox } = require('dropbox');
+const fetch = require('node-fetch');
+
 // Načteme modul pro perzistenci dat
 const { loadData, saveData } = require('./dataon');
 
@@ -92,6 +96,44 @@ app.post('/generateZip', async (req, res) => {
   } catch (error) {
     console.error('Chyba při generování ZIP souboru:', error);
     res.status(500).send('Chyba při generování ZIP souboru: ' + error.message);
+  }
+});
+
+// Nový endpoint pro nahrávání souborů do Dropboxu
+app.post('/uploadToDropbox', async (req, res) => {
+  try {
+    // Očekáváme JSON s base64Data (bez prefixu) a fileName
+    const { base64Data, fileName } = req.body;
+
+    const dbx = new Dropbox({
+      accessToken: 'sl.u.AFphMAmO2JtECkY41tVuzd7nuOitXCOXB8kDYP2swEAb-14LpD_J_M5e3Ao0haHg9bW7RXxPHzXhuSeEsy1emBtMX1tuOr1tJPAuRBRWEYX2ncpbm69dUgt8Ss6_LdhucHX5LjGwc7sNA4oUV-6s9LorS1tsh0u0jbOTrl-W85Nce5BQGeRlK3d5-oW_g-zJVJ6a8C7LQ2wDJp79LhZoO2tceFyXD5BRClj6Fn9LnfR0mPcAyKv1FP9hhuNLM2z1-Z_hZnGRcz3aWVwJIwY5sDS6FDEUX4r0MDe9x2Rue96BJZuYOmeXBtiPJQrwmjcTBHN-UI0449vDKY95Wy2HR8cLsJ8vfoGyzBDKXYvBjZKfXNcYJKdJ7c5DU9pqSz7dAdh6KqyuWa_tyWDr0nA78BfvKhOARJT1n4z6ALXtCK5qpQP28o6eN2B91BW6sDsdZ8ioBDOH3Ds-llUrEolATiucZUtnujInZCYVWPjWDuERBfYAQWGsZBWdEVNMvQq0EjYJVHS7gZ5SWlHwccL-D9GfTr9vCYYQO6H4IEIrZYAwOb7Li4Dkwit75TKlxAZiz5n0YTriG4spl_odMMp30SQVzxhEV4mOiIv4XGXXY43s-1at5P2FF3m9auhHeb7h0ka9cOxL1lZNYTlIi1HzMv9CgEQB6C_aW-gt_Xc7jss7q-OBvlOEU3XrxWyaefyg_vYnohc5vRKoRWyEghzKr4diGnXN233BB6Lcu0WwNJF9TZO6hPM9ZtK3Z5SsxFIvXpCixsPFokHe3kQd7LsAwtNzaFkd401gtN7Sl6AvyGU7OyUmDSz5jjZUn8ltAJTIEn7u1NjaiNq9mi-tQoTlPpkt3OAhTpFhtTvfoQF-F4mf5alwIVLGQv5iBrmwz6fZjRTiz5hLyA-Uaim4HndJcviYVjlHiA8jiPJbtS1H0meO5Va2iXOm9jt1w_SZGMla-GuUjfJmENYgKK_YT0cxsdzgS9Vilj8Al88vBfrPepn_mPQXsO9S6VIYfVKyYO8_IQXz9VEtr-aMUwZg9EvhRE4NGAAxMj55VEsugsr66t4M1NLvkNGxoPES_dxgazqM7e68qANGAnjkeGU-HTHD8j4YGjpJaa1V57EUZkTZe2-P5o2Ht76qnzR3grTfPvguRdzLXna2fw2BVP9g22xLnWiWs2dHtUrnqzi8--Xqdm7lOZ0Xo9w9anMqiHZ8Tw3UUyCdxB73QysZr1PP8gO1dF4q1zaYBKbUb5j0iRiTq4all_sH_RKLE2qOXGHFntMMRYpRl0VzdrgzqKZGzmAh9i208TsDcy7E93fE84w-hk2DHO1uXfYChlNIHdqBHaWsiHfrogYDctQabInl4KEwkFElQ8UpWrKEz3WgrFBVM2jzQSGPqqxTdLaFu5hdEtCJ-MJiTjln5gJTLS22gqWYtaG2',
+      fetch: fetch
+    });
+
+    // Převod base64 na binární buffer
+    const fileBuffer = Buffer.from(base64Data, 'base64');
+
+    // Nastav cestu, kam se soubor uloží v Dropboxu (např. do složky /app)
+    const dropboxPath = '/app/' + fileName;
+
+    // Nahraj soubor do Dropboxu
+    const uploadResponse = await dbx.filesUpload({
+      path: dropboxPath,
+      contents: fileBuffer
+    });
+
+    // Vytvoř sdílený odkaz, aby bylo možné soubor stáhnout
+    const sharedLinkRes = await dbx.sharingCreateSharedLinkWithSettings({
+      path: uploadResponse.result.path_lower
+    });
+
+    // Úprava odkazu pro přímé stažení
+    let link = sharedLinkRes.result.url.replace('?dl=0', '?dl=1');
+
+    res.json({ success: true, link });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
