@@ -13,13 +13,13 @@
     "archiver": "^7.0.1",
     "body-parser": "^1.20.3",
     "cors": "^2.8.5",
-    "dropbox": "^10.34.0",
     "express": "^4.21.2",
     "image-size": "^1.2.0",
-    "node-fetch": "^3.3.2",
     "nodemailer": "^6.9.15",
     "pdfkit": "^0.15.2",
     "pg": "^8.13.3",
-    "socket.io": "^4.8.1"
+    "socket.io": "^4.8.1",
+    "dropbox": "^10.11.0",
+    "node-fetch": "^2.6.7"
   }
 }
