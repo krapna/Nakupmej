@@ -105,16 +105,19 @@ app.post('/uploadToDropbox', async (req, res) => {
     // Očekáváme JSON s base64Data (bez prefixu) a fileName
     const { base64Data, fileName } = req.body;
 
+    // Přístupový token se načítá z environmentálních proměnných
     const dbx = new Dropbox({
-  accessToken: process.env.DROPBOX_ACCESS_TOKEN, // načte z Environment Variable
-  fetch: fetch
-});
+      accessToken: process.env.DROPBOX_ACCESS_TOKEN,
+      fetch: fetch
+    });
 
     // Převod base64 na binární buffer
     const fileBuffer = Buffer.from(base64Data, 'base64');
 
-    // Nastav cestu, kam se soubor uloží v Dropboxu (např. do složky /app)
-    const dropboxPath = '/app/' + fileName;
+    // Nastav cestu, kam se soubor uloží v Dropboxu.
+    // Pokud chceš, aby se nahrával přímo do kořene, použij '/' + fileName
+    // Pokud chceš do složky, např. '/app/', uprav dle potřeby.
+    const dropboxPath = '/' + fileName;
 
     // Nahraj soubor do Dropboxu
     const uploadResponse = await dbx.filesUpload({
