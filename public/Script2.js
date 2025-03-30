@@ -39,10 +39,17 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('date').value = currentDocument.date || '';
         document.getElementById('result').value = currentDocument.result || '';
 
-        // Načtení nahraných souborů
+        // Načtení nahraných souborů (nyní jen jako odkazy)
         if (currentDocument.files) {
             currentDocument.files.forEach(function(file) {
-                addFileToList(file.name, file.content);
+                const fileList = document.getElementById('fileList');
+                const fileItem = document.createElement('div');
+                const link = document.createElement('a');
+                link.href = file.content;
+                link.textContent = file.name;
+                link.target = '_blank';
+                fileItem.appendChild(link);
+                fileList.appendChild(fileItem);
             });
         }
         loadForm3();
@@ -99,44 +106,7 @@ document.addEventListener('DOMContentLoaded', function() {
         `;
     }
 
-    // Pomocná funkce pro zobrazení nahraných souborů – nyní s atributem download
-    function addFileToList(fileName, fileContent) {
-        const fileList = document.getElementById('fileList');
-        const fileItem = document.createElement('div');
-        const link = document.createElement('a');
-        link.href = fileContent;
-        link.download = fileName; // Atribut download způsobí stažení souboru
-        link.textContent = fileName;
-        fileItem.appendChild(link);
-        fileList.appendChild(fileItem);
-
-        // Pokud se jedná o obrázek (JPEG nebo PNG) – zobrazíme také náhled
-        if (fileContent.startsWith('data:image') || fileContent.startsWith('http')) {
-            let photoPreview = document.getElementById('photoPreview');
-            if (!photoPreview) {
-                photoPreview = document.createElement('div');
-                photoPreview.id = 'photoPreview';
-                const resultElement = document.getElementById('result');
-                resultElement.parentNode.insertBefore(photoPreview, resultElement.nextSibling);
-            }
-            photoPreview.innerHTML = '';
-            const img = document.createElement('img');
-            img.src = fileContent;
-            img.style.maxWidth = '300px';
-            img.style.cursor = 'pointer';
-            img.style.marginTop = '10px';
-            // Při kliknutí se obrázek stáhne
-            img.addEventListener('click', function() {
-                const a = document.createElement('a');
-                a.href = fileContent;
-                a.download = fileName;
-                a.click();
-            });
-            photoPreview.appendChild(img);
-        }
-    }
-
-    // Obsluha nahrávání souborů přes input typu "file"
+    // Obsluha nahrávání souborů – posílá base64 přímo na server, neděláme žádný náhled
     const fileUpload = document.getElementById('fileUpload');
     fileUpload.addEventListener('change', function(event) {
         const files = Array.from(event.target.files);
@@ -145,11 +115,11 @@ document.addEventListener('DOMContentLoaded', function() {
             const reader = new FileReader();
             reader.onload = function(e) {
                 const dataURL = e.target.result;
-                // Odstraníme prefix "data:image/jpeg;base64," atd.
+                // Odstraníme prefix
                 const base64Data = dataURL.split(',')[1];
                 const fileName = documentNumber ? `${documentNumber}_${file.name}` : file.name;
 
-                // Odeslání souboru na Dropbox pomocí našeho endpointu
+                // Zavoláme endpoint /uploadToDropbox
                 fetch('/uploadToDropbox', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -158,12 +128,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        // data.link obsahuje odkaz na soubor v Dropboxu
-                        addFileToList(fileName, data.link);
+                        // Do currentDocument uložíme jen odkaz
                         if (!currentDocument.files) {
                             currentDocument.files = [];
                         }
                         currentDocument.files.push({ name: fileName, content: data.link });
+
+                        // Přidáme textový odkaz do #fileList
+                        const fileList = document.getElementById('fileList');
+                        const fileItem = document.createElement('div');
+                        const link = document.createElement('a');
+                        link.href = data.link;
+                        link.textContent = fileName;
+                        link.target = '_blank';
+                        fileItem.appendChild(link);
+                        fileList.appendChild(fileItem);
                     } else {
                         console.error('Upload do Dropboxu selhal:', data.error);
                         alert('Upload do Dropboxu selhal: ' + data.error);
@@ -178,7 +157,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Při obdržení synchronizovaných dokumentů ze serveru aktualizujeme lokální pole
+    // Při obdržení synchronizovaných dokumentů ze serveru se aktualizují data
     document.addEventListener('documentsUpdated', function(event) {
         documents = event.detail;
         if (docIndex !== null && documents[docIndex]) {
@@ -237,102 +216,4 @@ document.addEventListener('DOMContentLoaded', function() {
     endButton.addEventListener('click', function() {
         window.location.href = 'Strana1.html';
     });
-
-    // Nový kód pro tlačítko "Camera" s využitím zadní kamery a zobrazením náhledu
-    const cameraBtn = document.getElementById('cameraBtn');
-    cameraBtn.addEventListener('click', function() {
-        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-            // Vytvoříme modal pro zobrazení videa
-            const modal = document.createElement('div');
-            modal.style.position = 'fixed';
-            modal.style.top = '0';
-            modal.style.left = '0';
-            modal.style.width = '100%';
-            modal.style.height = '100%';
-            modal.style.backgroundColor = 'rgba(0,0,0,0.8)';
-            modal.style.display = 'flex';
-            modal.style.flexDirection = 'column';
-            modal.style.justifyContent = 'center';
-            modal.style.alignItems = 'center';
-            modal.style.zIndex = '1000';
-
-            // Vytvoříme video element
-            const video = document.createElement('video');
-            video.autoplay = true;
-            video.style.width = '80%';
-            video.style.maxWidth = '500px';
-            modal.appendChild(video);
-
-            // Tlačítko pro zachycení fotografie
-            const captureBtn = document.createElement('button');
-            captureBtn.textContent = 'Pořídit fotografii';
-            captureBtn.style.marginTop = '20px';
-            modal.appendChild(captureBtn);
-
-            document.body.appendChild(modal);
-
-            // Požadujeme video stream s preferencí zadní kamery
-            const constraints = { video: { facingMode: { ideal: "environment" },
-                                          width: { ideal: 1920 },
-                                          height: { ideal: 1080 }  
-                                         } 
-            };
-            navigator.mediaDevices.getUserMedia(constraints)
-                .then(function(stream) {
-                    video.srcObject = stream;
-                    captureBtn.addEventListener('click', function() {
-                        const canvas = document.createElement('canvas');
-                        canvas.width = video.videoWidth;
-                        canvas.height = video.videoHeight;
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                        const dataURL = canvas.toDataURL('image/jpeg', 0.90);
-                        stream.getTracks().forEach(track => track.stop());
-                        document.body.removeChild(modal);
-                        const documentNumber = document.getElementById('documentNumber').value;
-                        const fileName = documentNumber ? `${documentNumber}.jpg` : 'photo.jpg';
-                        addFileToList(fileName, dataURL);
-                        if (!currentDocument.files) {
-                            currentDocument.files = [];
-                        }
-                        currentDocument.files.push({ name: fileName, content: dataURL });
-                        // Zobrazíme také náhled fotografie pod "Celkový výsledek"
-                        showThumbnail(dataURL, fileName);
-                    });
-                })
-                .catch(function(err) {
-                    console.error("Chyba při přístupu ke kameře: ", err);
-                    alert("Nelze získat přístup ke kameře.");
-                    if (document.body.contains(modal)) {
-                        document.body.removeChild(modal);
-                    }
-                });
-        } else {
-            alert("Funkce pro přístup ke kameře není podporována vaším prohlížečem.");
-        }
-    });
-
-    // Funkce pro zobrazení náhledu pořízené fotografie pod kolonkou "Celkový výsledek"
-    function showThumbnail(dataURL, fileName) {
-        let photoPreview = document.getElementById('photoPreview');
-        if (!photoPreview) {
-            photoPreview = document.createElement('div');
-            photoPreview.id = 'photoPreview';
-            const resultElement = document.getElementById('result');
-            resultElement.parentNode.insertBefore(photoPreview, resultElement.nextSibling);
-        }
-        photoPreview.innerHTML = '';
-        const img = document.createElement('img');
-        img.src = dataURL;
-        img.style.maxWidth = '600px';
-        img.style.cursor = 'pointer';
-        img.style.marginTop = '10px';
-        img.addEventListener('click', function() {
-            const a = document.createElement('a');
-            a.href = dataURL;
-            a.download = fileName;
-            a.click();
-        });
-        photoPreview.appendChild(img);
-    }
 });
