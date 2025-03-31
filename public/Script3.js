@@ -50,6 +50,8 @@ document.addEventListener('DOMContentLoaded', function() {
             if (ec) ec.checked = true;
         }
 
+        // Zobrazení uložených odkazů na soubory
+        fileList.innerHTML = '';
         if (currentDocument.files) {
             currentDocument.files.forEach(function(file) {
                 addFileToList(file.name, file.content);
@@ -57,37 +59,59 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Pomocná funkce pro zobrazení nahraných souborů – nyní s atributem download (soubor se stáhne po kliknutí)
+    // Pomocná funkce pro zobrazení odkazů na nahrané soubory
     function addFileToList(fileName, fileContent) {
         const fileItem = document.createElement('div');
         const link = document.createElement('a');
         link.href = fileContent;
-        link.download = fileName; // Atribut download způsobí stažení souboru
+        link.download = fileName;
         link.textContent = fileName;
+        link.target = '_blank';
         fileItem.appendChild(link);
         fileList.appendChild(fileItem);
     }
 
-    // Obsluha nahrávání souborů
+    // Obsluha nahrávání souborů – nyní s Dropbox integrací
     fileUpload.addEventListener('change', function(event) {
         const files = Array.from(event.target.files);
         const documentNumber = document.getElementById('documentNumber').value;
         files.forEach(function(file) {
             const reader = new FileReader();
             reader.onload = function(e) {
-                const fileContent = e.target.result;
+                const dataURL = e.target.result;
+                // Extrahujeme base64 data (bez prefixu)
+                const base64Data = dataURL.split(',')[1];
                 const fileName = documentNumber ? `${documentNumber}_${file.name}` : file.name;
-                addFileToList(fileName, fileContent);
-                if (!currentDocument.files) {
-                    currentDocument.files = [];
-                }
-                currentDocument.files.push({ name: fileName, content: fileContent });
+
+                // Odeslání souboru na Dropbox přes náš endpoint /uploadToDropbox
+                fetch('/uploadToDropbox', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ base64Data, fileName })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        addFileToList(fileName, data.link);
+                        if (!currentDocument.files) {
+                            currentDocument.files = [];
+                        }
+                        currentDocument.files.push({ name: fileName, content: data.link });
+                    } else {
+                        console.error('Upload do Dropboxu selhal:', data.error);
+                        alert('Upload do Dropboxu selhal: ' + data.error);
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    alert('Chyba při uploadu souboru.');
+                });
             };
             reader.readAsDataURL(file);
         });
     });
 
-    // Při obdržení synchronizovaných dokumentů ze serveru se aktualizují data
+    // Při obdržení synchronizovaných dokumentů ze serveru se data načtou
     document.addEventListener('documentsUpdated', function(event) {
         documents = event.detail;
         if (docIndex !== null && documents[docIndex]) {
@@ -98,7 +122,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     socket.emit('requestDocuments');
 
-    // Obsluha tlačítka "Hotovo" – zpracování formuláře a nastavení logiky vstupní kontroly
+    // Obsluha tlačítka "Hotovo" – uložení formuláře a synchronizace dokumentu
     saveButton.addEventListener('click', function(event) {
         event.preventDefault();
         const entryControlValue = document.querySelector('input[name="entryControl"]:checked')?.value;
@@ -121,8 +145,7 @@ document.addEventListener('DOMContentLoaded', function() {
         currentDocument.goodsType = goodsTypeChecked;
         currentDocument.note = document.getElementById('note').value;
 
-        // Zde nyní nastavíme v obou případech (Ano i Ne) příznak hasStrana4 = true,
-        // aby na Straně1 byl zobrazen tlačítko pro Stranu5, když je vstupní kontrola hotová.
+        // Nastavení příznaku a barvy dokumentu dle vstupní kontroly
         if (entryControlValue === 'Ano') {
             currentDocument.borderColor = 'orange';
             currentDocument.hasStrana4 = true;
