@@ -88,7 +88,7 @@ document.addEventListener('DOMContentLoaded', function () {
             // NOVÝ řádek – předvyplnění jména příjemce, pokud existuje
             if (currentDocument.recipientName) {
                 recipientNameInput.value = currentDocument.recipientName;
-        }
+            }
             displayFilledForms();
         }
     });
@@ -96,8 +96,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // Po navázání spojení požádáme server o aktuální dokumenty
     socket.emit('requestDocuments');
     
-    // Obsluha tlačítka "Potvrdit" – před generováním ZIP souboru:
-    // Uložíme do aktuálního dokumentu hodnotu z pole "Jméno příjemce", nastavíme barvu dokumentu na šedou a poté vygenerujeme ZIP
+    // Obsluha tlačítka "Potvrdit" – před generováním ZIP souboru
     confirmButton.addEventListener('click', function (event) {
         event.preventDefault();
         if (!currentDocument) {
@@ -116,13 +115,8 @@ document.addEventListener('DOMContentLoaded', function () {
         // Připravíme text se souhrnem vyplněných formulářů
         const filledData = displayFormsDiv.innerText;
     
-        // Připravíme přílohy – pokud existují nahrané soubory
-        const attachments = currentDocument.files ? currentDocument.files.map(file => {
-            return {
-                filename: file.name,
-                content: file.content.split(',')[1] // odstraníme prefix dataURL
-            };
-        }) : [];
+        // Nepřidáváme žádné přílohy, protože soubory se ukládají do Dropboxu
+        const attachments = [];
     
         const payload = {
             filledData: filledData,
@@ -163,7 +157,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
                 socket.emit('updateDocuments', documents);
             }
-            // Přesměrujeme uživatele zpět na Stranu1
+            // Přesměrujeme uživatele zpět na Strana1
             window.location.href = 'Strana1.html';
         })
         .catch(error => {

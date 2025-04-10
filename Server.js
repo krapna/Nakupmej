@@ -112,12 +112,12 @@ app.post('/generateZip', async (req, res) => {
     archive.on('error', (err) => res.status(500).send({ error: err.message }));
     archive.pipe(output);
     archive.file(pdfPath, { name: `${fileName}.pdf` });
-    if (attachments && attachments.length > 0) {
-      attachments.forEach((file, index) => {
-        const fileBuffer = Buffer.from(file.content, 'base64');
-        archive.append(fileBuffer, { name: `file${index + 1}_${file.filename}` });
-      });
-    }
+//    if (attachments && attachments.length > 0) {
+//      attachments.forEach((file, index) => {
+//        const fileBuffer = Buffer.from(file.content, 'base64');
+//        archive.append(fileBuffer, { name: `file${index + 1}_${file.filename}` });
+//      });
+//    }
     archive.finalize();
   } catch (error) {
     console.error('Chyba při generování ZIP souboru:', error);
