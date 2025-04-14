@@ -11,43 +11,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Aktuální dokument – pokud docIndex existuje, načte se ze sdíleného pole, jinak nový prázdný objekt
     let currentDocument = docIndex !== null ? null : {};
 
-    // Pomocná funkce pro generování unikátního názvu souboru
-    function generateUniqueFileName(documentNumber, originalFileName, filesArray) {
-      let base;
-      let extension = '';
-      if (documentNumber && documentNumber.trim() !== '') {
-        base = documentNumber.trim();
-        const dotIndex = originalFileName.lastIndexOf('.');
-        if (dotIndex !== -1) {
-          extension = originalFileName.substring(dotIndex);
-        }
-      } else {
-        const dotIndex = originalFileName.lastIndexOf('.');
-        if (dotIndex !== -1) {
-          base = originalFileName.substring(0, dotIndex);
-          extension = originalFileName.substring(dotIndex);
-        } else {
-          base = originalFileName;
-        }
-      }
-      let count = 0;
-      if (filesArray) {
-        filesArray.forEach(file => {
-          if (file.name.startsWith(base) && file.name.endsWith(extension)) {
-            const middle = file.name.substring(base.length, file.name.length - extension.length);
-            if (middle === '' || /^\(\d+\)$/.test(middle)) {
-              count++;
-            }
-          }
-        });
-      }
-      if (count === 0) {
-        return base + extension;
-      } else {
-        return base + '(' + (count + 1) + ')' + extension;
-      }
-    }
-
     // Funkce pro načtení dat aktuálního dokumentu do formuláře (Strana2)
     function loadFormData() {
         if (!currentDocument) return;
@@ -144,7 +107,21 @@ document.addEventListener('DOMContentLoaded', function() {
         `;
     }
 
-    // Obsluha nahrávání souborů – nyní s Dropbox integrací a unikátním pojmenováním
+    // Pomocná funkce pro zobrazení odkazů na nahrané soubory
+    function addFileToList(fileName, fileContent) {
+        const fileList = document.getElementById('fileList');
+        const fileItem = document.createElement('div');
+        const link = document.createElement('a');
+        link.href = fileContent;
+        link.download = fileName;
+        link.textContent = fileName;
+        link.target = '_blank';
+        fileItem.appendChild(link);
+        fileList.appendChild(fileItem);
+    }
+
+    // Obsluha nahrávání souborů přes input typu "file"
+    const fileUpload = document.getElementById('fileUpload');
     fileUpload.addEventListener('change', function(event) {
         const files = Array.from(event.target.files);
         const documentNumber = document.getElementById('documentNumber').value;
@@ -153,8 +130,8 @@ document.addEventListener('DOMContentLoaded', function() {
             reader.onload = function(e) {
                 const dataURL = e.target.result;
                 const base64Data = dataURL.split(',')[1];
-                // Použijeme funkci generateUniqueFileName – první soubor bude pojmenován jako documentNumber, další s (2), (3) atd.
-                const fileName = generateUniqueFileName(documentNumber, file.name, currentDocument.files);
+                const fileName = documentNumber ? `${documentNumber}_${file.name}` : file.name;
+
                 // Odeslání souboru na Dropbox pomocí endpointu /uploadToDropbox
                 fetch('/uploadToDropbox', {
                     method: 'POST',
@@ -164,11 +141,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        addFileToList(fileName, data.link);
                         if (!currentDocument.files) {
                             currentDocument.files = [];
                         }
                         currentDocument.files.push({ name: fileName, content: data.link });
+                        addFileToList(fileName, data.link);
                     } else {
                         console.error('Upload do Dropboxu selhal:', data.error);
                         alert('Upload do Dropboxu selhal: ' + data.error);
@@ -196,7 +173,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     socket.emit('requestDocuments');
 
-    // Obsluha tlačítka "Hotovo" – uložení formuláře a synchronizace dokumentu
+    // Obsluha tlačítka "Hotovo" – uložení formuláře
+    const saveButton = document.getElementById('saveBtn');
     saveButton.addEventListener('click', function(event) {
         event.preventDefault();
         currentDocument.number = document.getElementById('documentNumber').value;
@@ -239,4 +217,114 @@ document.addEventListener('DOMContentLoaded', function() {
     endButton.addEventListener('click', function() {
         window.location.href = 'Strana1.html';
     });
+
+    // Tlačítko kamery – nová verze, která využívá Dropbox upload endpoint
+    const cameraBtn = document.getElementById('cameraBtn');
+    cameraBtn.addEventListener('click', function() {
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            const modal = document.createElement('div');
+            modal.style.position = 'fixed';
+            modal.style.top = '0';
+            modal.style.left = '0';
+            modal.style.width = '100%';
+            modal.style.height = '100%';
+            modal.style.backgroundColor = 'rgba(0,0,0,0.8)';
+            modal.style.display = 'flex';
+            modal.style.flexDirection = 'column';
+            modal.style.justifyContent = 'center';
+            modal.style.alignItems = 'center';
+            modal.style.zIndex = '1000';
+
+            const video = document.createElement('video');
+            video.autoplay = true;
+            video.style.width = '80%';
+            video.style.maxWidth = '500px';
+            modal.appendChild(video);
+
+            const captureBtn = document.createElement('button');
+            captureBtn.textContent = 'Pořídit fotografii';
+            captureBtn.style.marginTop = '20px';
+            modal.appendChild(captureBtn);
+
+            document.body.appendChild(modal);
+
+            const constraints = { video: { facingMode: { ideal: "environment" },
+                                          width: { ideal: 1920 },
+                                          height: { ideal: 1080 }  
+                                         } 
+            };
+            navigator.mediaDevices.getUserMedia(constraints)
+                .then(function(stream) {
+                    video.srcObject = stream;
+                    captureBtn.addEventListener('click', function() {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = video.videoWidth;
+                        canvas.height = video.videoHeight;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                        const dataURL = canvas.toDataURL('image/jpeg', 0.90);
+                        stream.getTracks().forEach(track => track.stop());
+                        document.body.removeChild(modal);
+                        const documentNumber = document.getElementById('documentNumber').value;
+                        const fileName = documentNumber ? `${documentNumber}.jpg` : 'photo.jpg';
+                        const base64Data = dataURL.split(',')[1];
+
+                        fetch('/uploadToDropbox', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ base64Data, fileName })
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                addFileToList(fileName, data.link);
+                                if (!currentDocument.files) {
+                                    currentDocument.files = [];
+                                }
+                                currentDocument.files.push({ name: fileName, content: data.link });
+                            } else {
+                                console.error('Upload do Dropboxu selhal:', data.error);
+                                alert('Upload do Dropboxu selhal: ' + data.error);
+                            }
+                        })
+                        .catch(err => {
+                            console.error(err);
+                            alert('Chyba při uploadu souboru.');
+                        });
+                    });
+                })
+                .catch(function(err) {
+                    console.error("Chyba při přístupu ke kameře: ", err);
+                    alert("Nelze získat přístup ke kameře.");
+                    if (document.body.contains(modal)) {
+                        document.body.removeChild(modal);
+                    }
+                });
+        } else {
+            alert("Funkce pro přístup ke kameře není podporována vaším prohlížečem.");
+        }
+    });
+
+    function showThumbnail(dataURL, fileName) {
+        let photoPreview = document.getElementById('photoPreview');
+        if (!photoPreview) {
+            photoPreview = document.createElement('div');
+            photoPreview.id = 'photoPreview';
+            const resultElement = document.getElementById('result');
+            resultElement.parentNode.insertBefore(photoPreview, resultElement.nextSibling);
+        }
+        photoPreview.innerHTML = '';
+        const img = document.createElement('img');
+        img.src = dataURL;
+        img.style.maxWidth = '600px';
+        img.style.cursor = 'pointer';
+        img.style.marginTop = '10px';
+        img.addEventListener('click', function() {
+            const a = document.createElement('a');
+            a.href = dataURL;
+            a.download = fileName;
+            a.click();
+        });
+        photoPreview.appendChild(img);
+    }
 });
