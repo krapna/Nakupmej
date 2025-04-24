@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const saveButton = document.getElementById('saveBtn');
     const endButton = document.getElementById('endBtn');
-    const fileUpload = document.getElementById('fileUpload');
+//    const fileUpload = document.getElementById('fileUpload');
     const fileList = document.getElementById('fileList');
     const form2Container = document.getElementById('form2Container');
 
@@ -72,44 +72,44 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Obsluha nahrávání souborů – nyní s Dropbox integrací
-    fileUpload.addEventListener('change', function(event) {
-        const files = Array.from(event.target.files);
-        const documentNumber = document.getElementById('documentNumber').value;
-        files.forEach(function(file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const dataURL = e.target.result;
-                // Extrahujeme base64 data (bez prefixu)
-                const base64Data = dataURL.split(',')[1];
-                const fileName = documentNumber ? `${documentNumber}_${file.name}` : file.name;
-
-                // Odeslání souboru na Dropbox přes náš endpoint /uploadToDropbox
-                fetch('/uploadToDropbox', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ base64Data, fileName })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        addFileToList(fileName, data.link);
-                        if (!currentDocument.files) {
-                            currentDocument.files = [];
-                        }
-                        currentDocument.files.push({ name: fileName, content: data.link });
-                    } else {
-                        console.error('Upload do Dropboxu selhal:', data.error);
-                        alert('Upload do Dropboxu selhal: ' + data.error);
-                    }
-                })
-                .catch(err => {
-                    console.error(err);
-                    alert('Chyba při uploadu souboru.');
-                });
-            };
-            reader.readAsDataURL(file);
-        });
-    });
+//    fileUpload.addEventListener('change', function(event) {
+//        const files = Array.from(event.target.files);
+//        const documentNumber = document.getElementById('documentNumber').value;
+//        files.forEach(function(file) {
+//            const reader = new FileReader();
+//            reader.onload = function(e) {
+//                const dataURL = e.target.result;
+//                // Extrahujeme base64 data (bez prefixu)
+//                const base64Data = dataURL.split(',')[1];
+//                const fileName = documentNumber ? `${documentNumber}_${file.name}` : file.name;
+//
+//                // Odeslání souboru na Dropbox přes náš endpoint /uploadToDropbox
+//                fetch('/uploadToDropbox', {
+//                    method: 'POST',
+//                    headers: { 'Content-Type': 'application/json' },
+//                    body: JSON.stringify({ base64Data, fileName })
+//                })
+//                .then(response => response.json())
+//                .then(data => {
+//                    if (data.success) {
+//                        addFileToList(fileName, data.link);
+//                        if (!currentDocument.files) {
+//                            currentDocument.files = [];
+//                        }
+//                        currentDocument.files.push({ name: fileName, content: data.link });
+//                    } else {
+//                        console.error('Upload do Dropboxu selhal:', data.error);
+//                        alert('Upload do Dropboxu selhal: ' + data.error);
+//                    }
+//                })
+//                .catch(err => {
+//                    console.error(err);
+//                    alert('Chyba při uploadu souboru.');
+//                });
+//            };
+//            reader.readAsDataURL(file);
+//        });
+//    });
 
     // Při obdržení synchronizovaných dokumentů ze serveru se data načtou
     document.addEventListener('documentsUpdated', function(event) {
