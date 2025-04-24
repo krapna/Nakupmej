@@ -121,44 +121,44 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Obsluha nahrávání souborů přes input typu "file"
-    const fileUpload = document.getElementById('fileUpload');
-    fileUpload.addEventListener('change', function(event) {
-        const files = Array.from(event.target.files);
-        const documentNumber = document.getElementById('documentNumber').value;
-        files.forEach(function(file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const dataURL = e.target.result;
-                const base64Data = dataURL.split(',')[1];
-                const fileName = documentNumber ? `${documentNumber}_${file.name}` : file.name;
-
-                // Odeslání souboru na Dropbox pomocí endpointu /uploadToDropbox
-                fetch('/uploadToDropbox', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ base64Data, fileName })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        if (!currentDocument.files) {
-                            currentDocument.files = [];
-                        }
-                        currentDocument.files.push({ name: fileName, content: data.link });
-                        addFileToList(fileName, data.link);
-                    } else {
-                        console.error('Upload do Dropboxu selhal:', data.error);
-                        alert('Upload do Dropboxu selhal: ' + data.error);
-                    }
-                })
-                .catch(err => {
-                    console.error(err);
-                    alert('Chyba při uploadu souboru.');
-                });
-            };
-            reader.readAsDataURL(file);
-        });
-    });
+//    const fileUpload = document.getElementById('fileUpload');
+//    fileUpload.addEventListener('change', function(event) {
+//        const files = Array.from(event.target.files);
+//        const documentNumber = document.getElementById('documentNumber').value;
+//        files.forEach(function(file) {
+//            const reader = new FileReader();
+//            reader.onload = function(e) {
+//                const dataURL = e.target.result;
+//                const base64Data = dataURL.split(',')[1];
+//                const fileName = documentNumber ? `${documentNumber}_${file.name}` : file.name;
+//
+//                // Odeslání souboru na Dropbox pomocí endpointu /uploadToDropbox
+//                fetch('/uploadToDropbox', {
+//                    method: 'POST',
+//                    headers: { 'Content-Type': 'application/json' },
+//                    body: JSON.stringify({ base64Data, fileName })
+//                })
+//                .then(response => response.json())
+//                .then(data => {
+//                    if (data.success) {
+//                        if (!currentDocument.files) {
+//                            currentDocument.files = [];
+//                        }
+//                        currentDocument.files.push({ name: fileName, content: data.link });
+//                        addFileToList(fileName, data.link);
+//                    } else {
+//                        console.error('Upload do Dropboxu selhal:', data.error);
+//                        alert('Upload do Dropboxu selhal: ' + data.error);
+//                    }
+//                })
+//                .catch(err => {
+//                    console.error(err);
+//                    alert('Chyba při uploadu souboru.');
+//                });
+//            };
+//            reader.readAsDataURL(file);
+//        });
+//    });
 
     // Při obdržení synchronizovaných dokumentů ze serveru aktualizujeme lokální pole
     document.addEventListener('documentsUpdated', function(event) {
@@ -219,91 +219,91 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Tlačítko kamery – nová verze, která využívá Dropbox upload endpoint
-    const cameraBtn = document.getElementById('cameraBtn');
-    cameraBtn.addEventListener('click', function() {
-        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-            const modal = document.createElement('div');
-            modal.style.position = 'fixed';
-            modal.style.top = '0';
-            modal.style.left = '0';
-            modal.style.width = '100%';
-            modal.style.height = '100%';
-            modal.style.backgroundColor = 'rgba(0,0,0,0.8)';
-            modal.style.display = 'flex';
-            modal.style.flexDirection = 'column';
-            modal.style.justifyContent = 'center';
-            modal.style.alignItems = 'center';
-            modal.style.zIndex = '1000';
-
-            const video = document.createElement('video');
-            video.autoplay = true;
-            video.style.width = '80%';
-            video.style.maxWidth = '500px';
-            modal.appendChild(video);
-
-            const captureBtn = document.createElement('button');
-            captureBtn.textContent = 'Pořídit fotografii';
-            captureBtn.style.marginTop = '20px';
-            modal.appendChild(captureBtn);
-
-            document.body.appendChild(modal);
-
-            const constraints = { video: { facingMode: { ideal: "environment" },
-                                          width: { ideal: 1920 },
-                                          height: { ideal: 1080 }  
-                                         } 
-            };
-            navigator.mediaDevices.getUserMedia(constraints)
-                .then(function(stream) {
-                    video.srcObject = stream;
-                    captureBtn.addEventListener('click', function() {
-                        const canvas = document.createElement('canvas');
-                        canvas.width = video.videoWidth;
-                        canvas.height = video.videoHeight;
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                        const dataURL = canvas.toDataURL('image/jpeg', 0.90);
-                        stream.getTracks().forEach(track => track.stop());
-                        document.body.removeChild(modal);
-                        const documentNumber = document.getElementById('documentNumber').value;
-                        const fileName = documentNumber ? `${documentNumber}.jpg` : 'photo.jpg';
-                        const base64Data = dataURL.split(',')[1];
-
-                        fetch('/uploadToDropbox', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ base64Data, fileName })
-                        })
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.success) {
-                                addFileToList(fileName, data.link);
-                                if (!currentDocument.files) {
-                                    currentDocument.files = [];
-                                }
-                                currentDocument.files.push({ name: fileName, content: data.link });
-                            } else {
-                                console.error('Upload do Dropboxu selhal:', data.error);
-                                alert('Upload do Dropboxu selhal: ' + data.error);
-                            }
-                        })
-                        .catch(err => {
-                            console.error(err);
-                            alert('Chyba při uploadu souboru.');
-                        });
-                    });
-                })
-                .catch(function(err) {
-                    console.error("Chyba při přístupu ke kameře: ", err);
-                    alert("Nelze získat přístup ke kameře.");
-                    if (document.body.contains(modal)) {
-                        document.body.removeChild(modal);
-                    }
-                });
-        } else {
-            alert("Funkce pro přístup ke kameře není podporována vaším prohlížečem.");
-        }
-    });
+//    const cameraBtn = document.getElementById('cameraBtn');
+//    cameraBtn.addEventListener('click', function() {
+//        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+//            const modal = document.createElement('div');
+//            modal.style.position = 'fixed';
+//            modal.style.top = '0';
+//            modal.style.left = '0';
+//            modal.style.width = '100%';
+//            modal.style.height = '100%';
+//            modal.style.backgroundColor = 'rgba(0,0,0,0.8)';
+//            modal.style.display = 'flex';
+//            modal.style.flexDirection = 'column';
+//            modal.style.justifyContent = 'center';
+//            modal.style.alignItems = 'center';
+//            modal.style.zIndex = '1000';
+//
+//            const video = document.createElement('video');
+//            video.autoplay = true;
+//            video.style.width = '80%';
+//            video.style.maxWidth = '500px';
+//            modal.appendChild(video);
+//
+//            const captureBtn = document.createElement('button');
+//            captureBtn.textContent = 'Pořídit fotografii';
+//            captureBtn.style.marginTop = '20px';
+//            modal.appendChild(captureBtn);
+//
+//            document.body.appendChild(modal);
+//
+//            const constraints = { video: { facingMode: { ideal: "environment" },
+//                                          width: { ideal: 1920 },
+//                                          height: { ideal: 1080 }  
+//                                         } 
+//            };
+//            navigator.mediaDevices.getUserMedia(constraints)
+//                .then(function(stream) {
+//                    video.srcObject = stream;
+//                    captureBtn.addEventListener('click', function() {
+//                        const canvas = document.createElement('canvas');
+//                        canvas.width = video.videoWidth;
+//                        canvas.height = video.videoHeight;
+//                        const ctx = canvas.getContext('2d');
+//                        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+//                        const dataURL = canvas.toDataURL('image/jpeg', 0.90);
+//                        stream.getTracks().forEach(track => track.stop());
+//                        document.body.removeChild(modal);
+//                        const documentNumber = document.getElementById('documentNumber').value;
+//                        const fileName = documentNumber ? `${documentNumber}.jpg` : 'photo.jpg';
+//                        const base64Data = dataURL.split(',')[1];
+//
+//                        fetch('/uploadToDropbox', {
+//                            method: 'POST',
+//                            headers: { 'Content-Type': 'application/json' },
+//                            body: JSON.stringify({ base64Data, fileName })
+//                        })
+//                        .then(response => response.json())
+//                        .then(data => {
+//                            if (data.success) {
+//                                addFileToList(fileName, data.link);
+//                                if (!currentDocument.files) {
+//                                    currentDocument.files = [];
+//                                }
+//                                currentDocument.files.push({ name: fileName, content: data.link });
+//                            } else {
+//                                console.error('Upload do Dropboxu selhal:', data.error);
+//                                alert('Upload do Dropboxu selhal: ' + data.error);
+//                            }
+//                        })
+//                        .catch(err => {
+//                            console.error(err);
+//                            alert('Chyba při uploadu souboru.');
+//                        });
+//                    });
+//                })
+//                .catch(function(err) {
+//                    console.error("Chyba při přístupu ke kameře: ", err);
+//                    alert("Nelze získat přístup ke kameře.");
+//                    if (document.body.contains(modal)) {
+//                        document.body.removeChild(modal);
+//                    }
+//                });
+//        } else {
+//            alert("Funkce pro přístup ke kameře není podporována vaším prohlížečem.");
+//        }
+//    });
 
     function showThumbnail(dataURL, fileName) {
         let photoPreview = document.getElementById('photoPreview');
