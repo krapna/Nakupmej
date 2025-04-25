@@ -89,7 +89,16 @@ app.post('/generateZip', async (req, res) => {
     const pdfDoc = new PDFDocument();
     const pdfStream = fs.createWriteStream(pdfPath);
     pdfDoc.pipe(pdfStream);
-    pdfDoc.font('Helvetica')
+
+    // **REGISTER AND USE CUSTOM FONT**
+    // Nahrazení výchozího fontu Helvetica fontem DejaVuSans.ttf,
+    // který leží ve stejné složce jako tento Server.js
+    const fontPath = path.join(__dirname, 'DejaVuSans.ttf');
+    console.log('GENERATE ZIP: fontPath=', fontPath, 'exists=', fs.existsSync(fontPath));
+    pdfDoc.registerFont('DejaVuSans', fontPath);
+
+    // Použít nový font pro text místo výchozí Helvetica
+    pdfDoc.font('DejaVuSans')
           .fontSize(14)
           .text(`Souhrn vyplněných formulářů`, { align: 'center' });
     pdfDoc.moveDown(2);
@@ -99,6 +108,7 @@ app.post('/generateZip', async (req, res) => {
     });
     pdfDoc.end();
     await new Promise((resolve) => pdfStream.on('finish', resolve));
+
     const zipPath = path.join(tempFolder, `${fileName}.zip`);
     const output = fs.createWriteStream(zipPath);
     const archive = archiver('zip', { zlib: { level: 9 } });
