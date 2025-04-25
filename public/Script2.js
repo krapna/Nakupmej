@@ -1,3 +1,4 @@
+// Script2.js
 document.addEventListener('DOMContentLoaded', function() {
     // Inicializace socket.io – předpokládáme, že onlineserv.js již vytvořil socket a uložil ho do window.socket
     const socket = window.socket || io();
@@ -130,7 +131,13 @@ document.addEventListener('DOMContentLoaded', function() {
             reader.onload = function(e) {
                 const dataURL = e.target.result;
                 const base64Data = dataURL.split(',')[1];
-                const fileName = documentNumber ? `${documentNumber}_${file.name}` : file.name;
+
+                // vypočteme pořadí souboru
+                const count = (currentDocument.files && currentDocument.files.length) || 0;
+                // extrahujeme příponu
+                const ext = file.name.split('.').pop();
+                // nové pojmenování: <číslo dokumentu> <pořadové číslo>.<ext>
+                const fileName = documentNumber ? `${documentNumber} ${count + 1}.${ext}` : file.name;
 
                 // Odeslání souboru na Dropbox pomocí endpointu /uploadToDropbox
                 fetch('/uploadToDropbox', {
@@ -158,6 +165,8 @@ document.addEventListener('DOMContentLoaded', function() {
             };
             reader.readAsDataURL(file);
         });
+        // vyčistíme input, aby šel znovu vybrat stejný soubor
+        fileUpload.value = '';
     });
 
     // Při obdržení synchronizovaných dokumentů ze serveru aktualizujeme lokální pole
@@ -250,8 +259,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const constraints = { video: { facingMode: { ideal: "environment" },
                                           width: { ideal: 1920 },
-                                          height: { ideal: 1080 }  
-                                         } 
+                                          height: { ideal: 1080 }
+                                         }
             };
             navigator.mediaDevices.getUserMedia(constraints)
                 .then(function(stream) {
@@ -265,8 +274,11 @@ document.addEventListener('DOMContentLoaded', function() {
                         const dataURL = canvas.toDataURL('image/jpeg', 0.90);
                         stream.getTracks().forEach(track => track.stop());
                         document.body.removeChild(modal);
+
+                        // zde také použijeme nové pojmenování
                         const documentNumber = document.getElementById('documentNumber').value;
-                        const fileName = documentNumber ? `${documentNumber}.jpg` : 'photo.jpg';
+                        const count = (currentDocument.files && currentDocument.files.length) || 0;
+                        const fileName = documentNumber ? `${documentNumber} ${count + 1}.jpg` : 'photo.jpg';
                         const base64Data = dataURL.split(',')[1];
 
                         fetch('/uploadToDropbox', {
