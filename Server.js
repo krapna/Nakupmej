@@ -89,9 +89,14 @@ app.post('/generateZip', async (req, res) => {
     const pdfDoc = new PDFDocument();
     const pdfStream = fs.createWriteStream(pdfPath);
     pdfDoc.pipe(pdfStream);
-    pdfDoc.font('Helvetica')
+
+    // **REGISTER AND USE CUSTOM FONT**
+    const fontPath = path.join(__dirname, 'public', 'fonts', 'DejaVuSans.ttf');
+    pdfDoc.registerFont('DejaVuSans', fontPath);
+    pdfDoc.font('DejaVuSans')
           .fontSize(14)
           .text(`Souhrn vyplněných formulářů`, { align: 'center' });
+
     pdfDoc.moveDown(2);
     filledData.split('\n').forEach(line => {
       pdfDoc.fontSize(12).text(line.trim(), { align: 'left' });
@@ -99,6 +104,7 @@ app.post('/generateZip', async (req, res) => {
     });
     pdfDoc.end();
     await new Promise((resolve) => pdfStream.on('finish', resolve));
+
     const zipPath = path.join(tempFolder, `${fileName}.zip`);
     const output = fs.createWriteStream(zipPath);
     const archive = archiver('zip', { zlib: { level: 9 } });
@@ -112,12 +118,14 @@ app.post('/generateZip', async (req, res) => {
     archive.on('error', (err) => res.status(500).send({ error: err.message }));
     archive.pipe(output);
     archive.file(pdfPath, { name: `${fileName}.pdf` });
-//    if (attachments && attachments.length > 0) {
-//      attachments.forEach((file, index) => {
-//        const fileBuffer = Buffer.from(file.content, 'base64');
-//        archive.append(fileBuffer, { name: `file${index + 1}_${file.filename}` });
-//      });
-//    }
+
+    //    if (attachments && attachments.length > 0) {
+    //      attachments.forEach((file, index) => {
+    //        const fileBuffer = Buffer.from(file.content, 'base64');
+    //        archive.append(fileBuffer, { name: `file${index + 1}_${file.filename}` });
+    //      });
+    //    }
+
     archive.finalize();
   } catch (error) {
     console.error('Chyba při generování ZIP souboru:', error);
