@@ -1,3 +1,4 @@
+
 const express = require('express');
 const bodyParser = require('body-parser');
 const fs = require('fs');
@@ -29,6 +30,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // OAuth2 – Přesměrování na Dropbox
 app.get('/auth/dropbox', (req, res) => {
+  // V environmentálních proměnných nastavte DROPBOX_APP_KEY a DROPBOX_APP_SECRET
   const dropboxAuthUrl = new URL('https://www.dropbox.com/oauth2/authorize');
   dropboxAuthUrl.searchParams.set('client_id', process.env.DROPBOX_APP_KEY);
   dropboxAuthUrl.searchParams.set('redirect_uri', 'https://nakupmej.onrender.com/auth/dropbox/callback');
@@ -60,7 +62,7 @@ app.get('/auth/dropbox/callback', async (req, res) => {
       return res.status(500).send('Chyba při získávání tokenu: ' + errText);
     }
     const tokenData = await tokenRes.json();
-    // Uložení tokenů do globálních proměnných (jen pro tento demo)
+    // Uložení tokenů do globálních proměnných (jen pro tento demo – v produkci používejte bezpečnější metodu!)
     global.dropboxAccessToken = tokenData.access_token;
     global.dropboxRefreshToken = tokenData.refresh_token;
     global.dropboxExpiresIn = tokenData.expires_in;
@@ -88,18 +90,9 @@ app.post('/generateZip', async (req, res) => {
     const pdfDoc = new PDFDocument();
     const pdfStream = fs.createWriteStream(pdfPath);
     pdfDoc.pipe(pdfStream);
-
-    // **REGISTER AND USE CUSTOM FONT**
-    // Font DejaVuSans.ttf je nyní v kořenové složce projektu vedle Server.js
-    const fontPath = path.join(__dirname, 'DejaVuSans.ttf');
-    console.log('GENERATE ZIP: fontPath=', fontPath, 'exists=', fs.existsSync(fontPath));
-    pdfDoc.registerFont('DejaVuSans', fontPath);
-
-    // Použít nový font pro text
-    pdfDoc.font('DejaVuSans')
+    pdfDoc.font('Helvetica')
           .fontSize(14)
           .text(`Souhrn vyplněných formulářů`, { align: 'center' });
-
     pdfDoc.moveDown(2);
     filledData.split('\n').forEach(line => {
       pdfDoc.fontSize(12).text(line.trim(), { align: 'left' });
@@ -107,7 +100,6 @@ app.post('/generateZip', async (req, res) => {
     });
     pdfDoc.end();
     await new Promise((resolve) => pdfStream.on('finish', resolve));
-
     const zipPath = path.join(tempFolder, `${fileName}.zip`);
     const output = fs.createWriteStream(zipPath);
     const archive = archiver('zip', { zlib: { level: 9 } });
@@ -120,18 +112,13 @@ app.post('/generateZip', async (req, res) => {
     });
     archive.on('error', (err) => res.status(500).send({ error: err.message }));
     archive.pipe(output);
-
-    // vložíme PDF do ZIP
     archive.file(pdfPath, { name: `${fileName}.pdf` });
-
-    // pokud bys chtěl přidat i další přílohy, můžeš odkomentovat toto:
-    // if (attachments && attachments.length > 0) {
-    //   attachments.forEach((file, index) => {
-    //     const fileBuffer = Buffer.from(file.content, 'base64');
-    //     archive.append(fileBuffer, { name: `file${index + 1}_${file.filename}` });
-    //   });
-    // }
-
+//    if (attachments && attachments.length > 0) {
+//      attachments.forEach((file, index) => {
+//        const fileBuffer = Buffer.from(file.content, 'base64');
+//        archive.append(fileBuffer, { name: `file${index + 1}_${file.filename}` });
+//      });
+//    }
     archive.finalize();
   } catch (error) {
     console.error('Chyba při generování ZIP souboru:', error);
@@ -142,15 +129,26 @@ app.post('/generateZip', async (req, res) => {
 // Nový endpoint pro nahrávání souborů do Dropboxu
 app.post('/uploadToDropbox', async (req, res) => {
   try {
+    // Očekáváme JSON s base64Data (bez prefixu) a fileName
     const { base64Data, fileName } = req.body;
+    // Pokud token ještě nebyl získán, vrátíme chybu
     if (!global.dropboxAccessToken) {
-      return res.status(400).json({ success: false, error: "Dropbox token není dostupný. Přihlaste se přes /auth/dropbox." });
+      return res.status(400).json({ success: false, error: "Dropbox token není dostupný. Nejdříve se přihlaste přes /auth/dropbox." });
     }
-    const dbx = new Dropbox({ accessToken: global.dropboxAccessToken, fetch });
+    const dbx = new Dropbox({
+      accessToken: global.dropboxAccessToken,
+      fetch: fetch
+    });
     const fileBuffer = Buffer.from(base64Data, 'base64');
+    // Uložíme soubor přímo do kořene Dropboxu (bez podsložek)
     const dropboxPath = '/' + fileName;
-    const uploadResponse = await dbx.filesUpload({ path: dropboxPath, contents: fileBuffer });
-    const sharedLinkRes = await dbx.sharingCreateSharedLinkWithSettings({ path: uploadResponse.result.path_lower });
+    const uploadResponse = await dbx.filesUpload({
+      path: dropboxPath,
+      contents: fileBuffer
+    });
+    const sharedLinkRes = await dbx.sharingCreateSharedLinkWithSettings({
+      path: uploadResponse.result.path_lower
+    });
     let link = sharedLinkRes.result.url.replace('?dl=0', '?dl=1');
     res.json({ success: true, link });
   } catch (error) {
