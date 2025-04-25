@@ -29,7 +29,6 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // OAuth2 – Přesměrování na Dropbox
 app.get('/auth/dropbox', (req, res) => {
-  // V environmentálních proměnných nastavte DROPBOX_APP_KEY a DROPBOX_APP_SECRET
   const dropboxAuthUrl = new URL('https://www.dropbox.com/oauth2/authorize');
   dropboxAuthUrl.searchParams.set('client_id', process.env.DROPBOX_APP_KEY);
   dropboxAuthUrl.searchParams.set('redirect_uri', 'https://nakupmej.onrender.com/auth/dropbox/callback');
@@ -61,7 +60,7 @@ app.get('/auth/dropbox/callback', async (req, res) => {
       return res.status(500).send('Chyba při získávání tokenu: ' + errText);
     }
     const tokenData = await tokenRes.json();
-    // Uložení tokenů do globálních proměnných (jen pro tento demo – v produkci používejte bezpečnější metodu!)
+    // Uložení tokenů do globálních proměnných (jen pro tento demo)
     global.dropboxAccessToken = tokenData.access_token;
     global.dropboxRefreshToken = tokenData.refresh_token;
     global.dropboxExpiresIn = tokenData.expires_in;
@@ -91,7 +90,8 @@ app.post('/generateZip', async (req, res) => {
     pdfDoc.pipe(pdfStream);
 
     // **REGISTER AND USE CUSTOM FONT**
-    const fontPath = path.join(__dirname, 'public', 'fonts', 'DejaVuSans.ttf');
+    // Font DejaVuSans.ttf je nyní v kořenové složce projektu vedle Server.js
+    const fontPath = path.join(__dirname, 'DejaVuSans.ttf');
     console.log('GENERATE ZIP: fontPath=', fontPath, 'exists=', fs.existsSync(fontPath));
     pdfDoc.registerFont('DejaVuSans', fontPath);
 
@@ -120,14 +120,17 @@ app.post('/generateZip', async (req, res) => {
     });
     archive.on('error', (err) => res.status(500).send({ error: err.message }));
     archive.pipe(output);
+
+    // vložíme PDF do ZIP
     archive.file(pdfPath, { name: `${fileName}.pdf` });
 
-    //    if (attachments && attachments.length > 0) {
-    //      attachments.forEach((file, index) => {
-    //        const fileBuffer = Buffer.from(file.content, 'base64');
-    //        archive.append(fileBuffer, { name: `file${index + 1}_${file.filename}` });
-    //      });
-    //    }
+    // pokud bys chtěl přidat i další přílohy, můžeš odkomentovat toto:
+    // if (attachments && attachments.length > 0) {
+    //   attachments.forEach((file, index) => {
+    //     const fileBuffer = Buffer.from(file.content, 'base64');
+    //     archive.append(fileBuffer, { name: `file${index + 1}_${file.filename}` });
+    //   });
+    // }
 
     archive.finalize();
   } catch (error) {
@@ -139,26 +142,15 @@ app.post('/generateZip', async (req, res) => {
 // Nový endpoint pro nahrávání souborů do Dropboxu
 app.post('/uploadToDropbox', async (req, res) => {
   try {
-    // Očekáváme JSON s base64Data (bez prefixu) a fileName
     const { base64Data, fileName } = req.body;
-    // Pokud token ještě nebyl získán, vrátíme chybu
     if (!global.dropboxAccessToken) {
-      return res.status(400).json({ success: false, error: "Dropbox token není dostupný. Nejdříve se přihlaste přes /auth/dropbox." });
+      return res.status(400).json({ success: false, error: "Dropbox token není dostupný. Přihlaste se přes /auth/dropbox." });
     }
-    const dbx = new Dropbox({
-      accessToken: global.dropboxAccessToken,
-      fetch: fetch
-    });
+    const dbx = new Dropbox({ accessToken: global.dropboxAccessToken, fetch });
     const fileBuffer = Buffer.from(base64Data, 'base64');
-    // Uložíme soubor přímo do kořene Dropboxu (bez podsložek)
     const dropboxPath = '/' + fileName;
-    const uploadResponse = await dbx.filesUpload({
-      path: dropboxPath,
-      contents: fileBuffer
-    });
-    const sharedLinkRes = await dbx.sharingCreateSharedLinkWithSettings({
-      path: uploadResponse.result.path_lower
-    });
+    const uploadResponse = await dbx.filesUpload({ path: dropboxPath, contents: fileBuffer });
+    const sharedLinkRes = await dbx.sharingCreateSharedLinkWithSettings({ path: uploadResponse.result.path_lower });
     let link = sharedLinkRes.result.url.replace('?dl=0', '?dl=1');
     res.json({ success: true, link });
   } catch (error) {
