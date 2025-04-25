@@ -92,7 +92,10 @@ app.post('/generateZip', async (req, res) => {
 
     // **REGISTER AND USE CUSTOM FONT**
     const fontPath = path.join(__dirname, 'public', 'fonts', 'DejaVuSans.ttf');
+    console.log('GENERATE ZIP: fontPath=', fontPath, 'exists=', fs.existsSync(fontPath));
     pdfDoc.registerFont('DejaVuSans', fontPath);
+
+    // Použít nový font pro text
     pdfDoc.font('DejaVuSans')
           .fontSize(14)
           .text(`Souhrn vyplněných formulářů`, { align: 'center' });
