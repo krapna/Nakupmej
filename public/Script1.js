@@ -8,14 +8,14 @@ document.addEventListener('DOMContentLoaded', function() {
     // Globální pole dokumentů získaných ze serveru
     var documents = [];
 
+    // Požádáme server o aktuální data
+    socket.emit('requestDocuments');
+
     // Aktualizace objednávek po přijetí dat
     document.addEventListener('documentsUpdated', function(event) {
         documents = event.detail;
         loadOrders();
     });
-
-    // Požádáme server o aktuální data
-    socket.emit('requestDocuments');
 
     goToStrana2Button.addEventListener('click', function() {
         window.location.href = 'Strana2.html';
@@ -32,7 +32,25 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function loadOrders() {
         ordersDiv.innerHTML = ''; // Vyčistíme předchozí zobrazení
-        documents.forEach(function(doc, index) {
+
+        // Seřazení dokumentů podle barvy
+        var colorOrder = { 'green': 1, 'orange': 2, 'blue': 3, 'gray': 4 };
+        var sorted = documents
+            .map(function(doc, index) { return { doc: doc, index: index }; })
+            .sort(function(a, b) {
+                var colorA = a.doc.borderColor || 'blue';
+                var colorB = b.doc.borderColor || 'blue';
+                var rankA = colorOrder[colorA] || 5;
+                var rankB = colorOrder[colorB] || 5;
+                if (rankA !== rankB) return rankA - rankB;
+                return a.index - b.index;
+            });
+
+        // Vykreslení ve správném pořadí
+        sorted.forEach(function(item) {
+            var doc = item.doc;
+            var index = item.index;
+
             var orderDiv = document.createElement('div');
             orderDiv.className = 'order';
             orderDiv.textContent = 'Dokument: ' + doc.number;
@@ -98,7 +116,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 orderDiv.appendChild(recipientBtn);
             }
 
-            // **Umístění** (pole z Strana2)
+            // Umístění
             if ((doc.borderColor === 'gray' || doc.borderColor === 'green') && Array.isArray(doc.location) && doc.location.length) {
                 var locationBtn = document.createElement('button');
                 locationBtn.textContent = doc.location.join(', ');
@@ -110,7 +128,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 orderDiv.appendChild(locationBtn);
             }
 
-            // **Dodavatel** (ze Strana2 nebo doplněný ve Strana3)
+            // Dodavatel
             if ((doc.borderColor === 'gray' || doc.borderColor === 'green') && doc.supplier) {
                 var supplierBtn = document.createElement('button');
                 supplierBtn.textContent = doc.supplier;
