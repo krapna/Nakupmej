@@ -1,3 +1,4 @@
+// Script1.js - aktualizováno pro podporu zobrazení tlačítka „resume (X)“ pro rozpracované Strana3 dokumenty
 document.addEventListener('DOMContentLoaded', function() {
     var socket = window.socket || io();
     var goToStrana2Button = document.getElementById('goToStrana2');
@@ -33,7 +34,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function loadOrders() {
         ordersDiv.innerHTML = ''; // Vyčistíme předchozí zobrazení
 
-        // Seřazení dokumentů podle barvy
+        // Seřazení dokumentů podle barvy: zelené → oranžové → modré → šedé
         var colorOrder = { 'green': 1, 'orange': 2, 'blue': 3, 'gray': 4 };
         var sorted = documents
             .map(function(doc, index) { return { doc: doc, index: index }; })
@@ -103,6 +104,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
             orderDiv.appendChild(deleteBtn);
+
+            // Tlačítko "Resume" (X) pro rozpracované Strana3
+            if (doc.draftStrana3) {
+                var resumeBtn = document.createElement('button');
+                resumeBtn.textContent = 'X';
+                resumeBtn.style.backgroundColor = 'gray';
+                resumeBtn.style.color = 'white';
+                resumeBtn.style.border = 'none';
+                resumeBtn.style.cursor = 'pointer';
+                resumeBtn.addEventListener('click', function() {
+                    window.location.href = 'Strana3.html?docIndex=' + index;
+                });
+                orderDiv.appendChild(resumeBtn);
+            }
 
             // Jméno příjemce
             if ((doc.borderColor === 'gray' || doc.borderColor === 'green') && doc.recipientName) {

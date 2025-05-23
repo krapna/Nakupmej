@@ -1,4 +1,4 @@
-// Script3.js
+// Script3.js - upraveno pro uložení rozpracovaných dat při stisku „Konec“ a zobrazení resume (X) na Strana1
 document.addEventListener('DOMContentLoaded', function() {
     const socket = window.socket || io();
     const urlParams = new URLSearchParams(window.location.search);
@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const fileList = document.getElementById('fileList');
     const form2Container = document.getElementById('form2Container');
 
-    // Funkce pro načtení dat aktuálního dokumentu do formuláře
+    // Načtení dat do formuláře
     function loadFormData() {
         if (!currentDocument) return;
         form2Container.innerHTML = `
@@ -26,7 +26,6 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('confirmedDeliveryDate').value = currentDocument.confirmedDeliveryDate || '';
         document.getElementById('deliveryDate').value = currentDocument.deliveryDate || '';
         document.getElementById('price').value = currentDocument.price || '';
-
         if (currentDocument.timeliness) {
             const t = document.querySelector(`input[name="timeliness"][value="${currentDocument.timeliness}"]`);
             if (t) t.checked = true;
@@ -51,7 +50,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (ec) ec.checked = true;
         }
 
-        // Zobrazení uložených odkazů na soubory
+        // Zobrazení uložených souborů
         fileList.innerHTML = '';
         if (currentDocument.files) {
             currentDocument.files.forEach(function(file) {
@@ -60,7 +59,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Pomocná funkce pro zobrazení odkazů na nahrané soubory
     function addFileToList(fileName, fileContent) {
         const fileItem = document.createElement('div');
         const link = document.createElement('a');
@@ -72,7 +70,7 @@ document.addEventListener('DOMContentLoaded', function() {
         fileList.appendChild(fileItem);
     }
 
-    // Obsluha nahrávání souborů – nyní s upraveným pojmenováním
+    // Upload souborů (stejně jako dříve)
     fileUpload.addEventListener('change', function(event) {
         const files = Array.from(event.target.files);
         const documentNumber = document.getElementById('documentNumber').value;
@@ -80,47 +78,33 @@ document.addEventListener('DOMContentLoaded', function() {
             const reader = new FileReader();
             reader.onload = function(e) {
                 const dataURL = e.target.result;
-                // Extrahujeme base64 data (bez prefixu)
                 const base64Data = dataURL.split(',')[1];
-
-                // vypočteme pořadí souboru
                 const count = (currentDocument.files && currentDocument.files.length) || 0;
-                // ext z původního jména
                 const ext = file.name.split('.').pop();
-                // nové pojmenování: <číslo dokumentu> <pořadové číslo>.<ext>
                 const fileName = documentNumber ? `${documentNumber} ${count + 1}.${ext}` : file.name;
-
-                // Odeslání na Dropbox
                 fetch('/uploadToDropbox', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ base64Data, fileName })
                 })
-                .then(response => response.json())
+                .then(res => res.json())
                 .then(data => {
                     if (data.success) {
                         addFileToList(fileName, data.link);
-                        if (!currentDocument.files) {
-                            currentDocument.files = [];
-                        }
+                        currentDocument.files = currentDocument.files || [];
                         currentDocument.files.push({ name: fileName, content: data.link });
                     } else {
-                        console.error('Upload do Dropboxu selhal:', data.error);
                         alert('Upload do Dropboxu selhal: ' + data.error);
                     }
                 })
-                .catch(err => {
-                    console.error(err);
-                    alert('Chyba při uploadu souboru.');
-                });
+                .catch(() => alert('Chyba při uploadu souboru.'));
             };
             reader.readAsDataURL(file);
         });
-        // vyčistíme input pro opětovné použití
         fileUpload.value = '';
     });
 
-    // Při obdržení synchronizovaných dokumentů ze serveru se data načtou
+    // Příjem aktualizací z backendu
     document.addEventListener('documentsUpdated', function(event) {
         documents = event.detail;
         if (docIndex !== null && documents[docIndex]) {
@@ -128,18 +112,16 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         loadFormData();
     });
-
     socket.emit('requestDocuments');
 
-    // Obsluha tlačítka "Hotovo" – uložení formuláře a synchronizace
+    // Uložení formuláře (Hotovo) + odstranění draft flagu
     saveButton.addEventListener('click', function(event) {
         event.preventDefault();
-        const entryControlValue = document.querySelector('input[name="entryControl"]:checked')?.value;
+        var entryControlValue = document.querySelector('input[name="entryControl"]:checked')?.value;
         if (!entryControlValue) {
             alert("Vyberte prosím možnost pod 'Vstupní kontrola'");
             return;
         }
-
         currentDocument.entryControl = entryControlValue;
         currentDocument.orderNumber = document.getElementById('orderNumber').value;
         currentDocument.supplier = document.getElementById('supplier').value;
@@ -150,17 +132,20 @@ document.addEventListener('DOMContentLoaded', function() {
         currentDocument.timeliness = document.querySelector('input[name="timeliness"]:checked')?.value;
         currentDocument.systemCheck = document.querySelector('input[name="systemCheck"]:checked')?.value;
         currentDocument.communication = document.querySelector('input[name="communication"]:checked')?.value;
-        const goodsTypeChecked = Array.from(document.querySelectorAll('input[name="goodsType"]:checked')).map(el => el.value);
-        currentDocument.goodsType = goodsTypeChecked;
+        currentDocument.goodsType = Array.from(document.querySelectorAll('input[name="goodsType"]:checked')).map(el => el.value);
         currentDocument.note = document.getElementById('note').value;
 
+        // Nastavení barvy a hasStrana4
         if (entryControlValue === 'Ano') {
             currentDocument.borderColor = 'orange';
             currentDocument.hasStrana4 = true;
-        } else if (entryControlValue === 'Ne') {
+        } else {
             currentDocument.borderColor = 'green';
             currentDocument.hasStrana4 = true;
         }
+
+        // Draft flag zrušíme
+        currentDocument.draftStrana3 = false;
 
         if (docIndex !== null) {
             documents[docIndex] = currentDocument;
@@ -169,7 +154,32 @@ document.addEventListener('DOMContentLoaded', function() {
         window.location.href = 'Strana1.html';
     });
 
+    // Uložení draftu a návrat na Strana1 (změní se pouze draft flag, barva zůstává stejná)
     endButton.addEventListener('click', function() {
+        currentDocument.orderNumber = document.getElementById('orderNumber').value;
+        currentDocument.supplier = document.getElementById('supplier').value;
+        currentDocument.confirmedDeliveryDate = document.getElementById('confirmedDeliveryDate').value;
+        currentDocument.deliveryDate = document.getElementById('deliveryDate').value;
+        currentDocument.price = document.getElementById('price').value;
+        const timeliness = document.querySelector('input[name="timeliness"]:checked')?.value;
+        if (timeliness) currentDocument.timeliness = timeliness;
+        const systemCheck = document.querySelector('input[name="systemCheck"]:checked')?.value;
+        if (systemCheck) currentDocument.systemCheck = systemCheck;
+        const communication = document.querySelector('input[name="communication"]:checked')?.value;
+        if (communication) currentDocument.communication = communication;
+        const goodsTypeChecked = Array.from(document.querySelectorAll('input[name="goodsType"]:checked')).map(el => el.value);
+        if (goodsTypeChecked.length) currentDocument.goodsType = goodsTypeChecked;
+        currentDocument.note = document.getElementById('note').value;
+        const entryControl = document.querySelector('input[name="entryControl"]:checked')?.value;
+        if (entryControl) currentDocument.entryControl = entryControl;
+
+        // Označíme dokument jako draft
+        currentDocument.draftStrana3 = true;
+
+        if (docIndex !== null) {
+            documents[docIndex] = currentDocument;
+        }
+        socket.emit('updateDocuments', documents);
         window.location.href = 'Strana1.html';
     });
 });
