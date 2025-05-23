@@ -32,6 +32,8 @@ document.addEventListener('DOMContentLoaded', function () {
             formData += `Dodávka odpovídá dokumentům: ${currentDocument.deliveryMatch || ''}\n`;
             formData += `Dokumenty dodávky: ${(currentDocument.documents || []).join(', ')}\n`;
             formData += `Poznámka: ${currentDocument.note || ''}\n`;
+            // Nové pole Umístění
+            formData += `Umístění: ${(currentDocument.location || []).join(', ')}\n`;
             formData += `Kontroloval: ${currentDocument.controlBy || ''}\n`;
             formData += `Datum: ${currentDocument.date || ''}\n`;
             formData += `Výsledek: ${currentDocument.result || ''}\n\n`;
@@ -85,7 +87,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (currentDocument.number) {
                 orderNumberInput.value = currentDocument.number;
             }
-            // NOVÝ řádek – předvyplnění jména příjemce, pokud existuje
+            // Předvyplnění jména příjemce, pokud existuje
             if (currentDocument.recipientName) {
                 recipientNameInput.value = currentDocument.recipientName;
             }
@@ -166,7 +168,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
     
-    // Obsluha tlačítka "Konec" – přesměruje zpět na Stranu1
+    // Obsluha tlačítka "Konec" – přesměruje zpět na Strana1
     endButton.addEventListener('click', function () {
         window.location.href = 'Strana1.html';
     });

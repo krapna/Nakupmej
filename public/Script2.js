@@ -36,6 +36,15 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
         document.getElementById('note').value = currentDocument.note || '';
+
+        // Načtení nové kolonky Umístění
+        if (currentDocument.location) {
+            currentDocument.location.forEach(function(loc) {
+                const cb = document.querySelector(`input[name="location"][value="${loc}"]`);
+                if (cb) cb.checked = true;
+            });
+        }
+
         document.getElementById('controlBy').value = currentDocument.controlBy || '';
         document.getElementById('date').value = currentDocument.date || '';
         document.getElementById('result').value = currentDocument.result || '';
@@ -197,6 +206,11 @@ document.addEventListener('DOMContentLoaded', function() {
         const docsChecked = Array.from(document.querySelectorAll('input[name="documents"]:checked')).map(el => el.value);
         currentDocument.documents = docsChecked;
         currentDocument.note = document.getElementById('note').value;
+
+        // Uložení nové kolonky Umístění
+        const locationChecked = Array.from(document.querySelectorAll('input[name="location"]:checked')).map(el => el.value);
+        if (locationChecked.length) currentDocument.location = locationChecked;
+
         currentDocument.controlBy = document.getElementById('controlBy').value;
         currentDocument.date = document.getElementById('date').value;
         currentDocument.result = document.getElementById('result').value;
@@ -257,11 +271,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             document.body.appendChild(modal);
 
-            const constraints = { video: { facingMode: { ideal: "environment" },
-                                          width: { ideal: 1920 },
-                                          height: { ideal: 1080 }
-                                         }
-            };
+            const constraints = { video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 } }};
             navigator.mediaDevices.getUserMedia(constraints)
                 .then(function(stream) {
                     video.srcObject = stream;
@@ -275,7 +285,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         stream.getTracks().forEach(track => track.stop());
                         document.body.removeChild(modal);
 
-                        // zde také použijeme nové pojmenování
                         const documentNumber = document.getElementById('documentNumber').value;
                         const count = (currentDocument.files && currentDocument.files.length) || 0;
                         const fileName = documentNumber ? `${documentNumber} ${count + 1}.jpg` : 'photo.jpg';
