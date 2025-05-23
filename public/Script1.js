@@ -36,11 +36,10 @@ document.addEventListener('DOMContentLoaded', function() {
             var orderDiv = document.createElement('div');
             orderDiv.className = 'order';
             orderDiv.textContent = 'Dokument: ' + doc.number;
-            // Použijeme vlastnost borderColor – pokud byla nastavena, dokument se zobrazí příslušně
             orderDiv.style.borderColor = doc.borderColor || 'blue';
             orderDiv.style.backgroundColor = doc.borderColor || 'blue';
 
-            // Tlačítko "Zobrazit" – zobrazí detail dokumentu
+            // Tlačítko "Zobrazit"
             var viewBtn = document.createElement('button');
             viewBtn.textContent = 'Zobrazit';
             viewBtn.addEventListener('click', function() {
@@ -48,7 +47,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             orderDiv.appendChild(viewBtn);
 
-            // Podle vstupní kontroly zobrazíme další tlačítka
+            // Další krok (Nákup / Kvalita / K předání)
             if (doc.hasStrana4) {
                 if (doc.borderColor === 'orange') {
                     var openBtn = document.createElement('button');
@@ -76,7 +75,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 orderDiv.appendChild(openBtn);
             }
 
-            // Tlačítko pro odstranění dokumentu s potvrzením
+            // Tlačítko "Odstranit"
             var deleteBtn = document.createElement('button');
             deleteBtn.textContent = 'Odstranit';
             deleteBtn.addEventListener('click', function() {
@@ -87,8 +86,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             orderDiv.appendChild(deleteBtn);
 
-            // Pokud je dokument dokončený (borderColor === "gray") a má vyplněné pole recipientName,
-            // přidáme extra tlačítko s textem z tohoto pole (informační, neaktivní)
+            // Jméno příjemce
             if ((doc.borderColor === 'gray' || doc.borderColor === 'green') && doc.recipientName) {
                 var recipientBtn = document.createElement('button');
                 recipientBtn.textContent = doc.recipientName;
@@ -98,6 +96,30 @@ document.addEventListener('DOMContentLoaded', function() {
                 recipientBtn.style.cursor = 'default';
                 recipientBtn.disabled = true;
                 orderDiv.appendChild(recipientBtn);
+            }
+
+            // **Umístění** (pole z Strana2)
+            if ((doc.borderColor === 'gray' || doc.borderColor === 'green') && Array.isArray(doc.location) && doc.location.length) {
+                var locationBtn = document.createElement('button');
+                locationBtn.textContent = doc.location.join(', ');
+                locationBtn.style.backgroundColor = 'gray';
+                locationBtn.style.color = 'white';
+                locationBtn.style.border = 'none';
+                locationBtn.style.cursor = 'default';
+                locationBtn.disabled = true;
+                orderDiv.appendChild(locationBtn);
+            }
+
+            // **Dodavatel** (ze Strana2 nebo doplněný ve Strana3)
+            if ((doc.borderColor === 'gray' || doc.borderColor === 'green') && doc.supplier) {
+                var supplierBtn = document.createElement('button');
+                supplierBtn.textContent = doc.supplier;
+                supplierBtn.style.backgroundColor = 'gray';
+                supplierBtn.style.color = 'white';
+                supplierBtn.style.border = 'none';
+                supplierBtn.style.cursor = 'default';
+                supplierBtn.disabled = true;
+                orderDiv.appendChild(supplierBtn);
             }
 
             ordersDiv.appendChild(orderDiv);
