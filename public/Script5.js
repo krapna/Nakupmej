@@ -1,21 +1,21 @@
-// Script5.js – upraveno pro podporu pěti polí „Jméno příjemce“ a jejich zahrnutí do generovaného obsahu
 document.addEventListener('DOMContentLoaded', function () {
+    // Inicializace socket.io – pokud onlineserv.js již vytvořil socket, použijeme window.socket, jinak vytvoříme nový
     const socket = window.socket || io();
+    
+    // Získání parametru docIndex z URL
     const urlParams = new URLSearchParams(window.location.search);
     const docIndex = urlParams.get('docIndex');
+    
+    // Globální proměnné pro dokumenty a aktuální dokument
     let documents = [];
     let currentDocument = {};
 
     // Získání prvků formuláře
-    const confirmButton        = document.getElementById('confirmBtn');
-    const endButton            = document.getElementById('endBtn');
-    const recipientNameInput1  = document.getElementById('recipientName1');
-    const recipientNameInput2  = document.getElementById('recipientName2');
-    const recipientNameInput3  = document.getElementById('recipientName3');
-    const recipientNameInput4  = document.getElementById('recipientName4');
-    const recipientNameInput5  = document.getElementById('recipientName5');
-    const orderNumberInput     = document.getElementById('orderNumber');
-
+    const confirmButton = document.getElementById('confirmBtn');
+    const endButton = document.getElementById('endBtn');
+    const recipientNameInput = document.getElementById('recipientName');
+    const orderNumberInput = document.getElementById('orderNumber');
+    
     // Vytvoření divu pro zobrazení souhrnu formulářů
     const displayFormsDiv = document.createElement('div');
 
@@ -32,11 +32,12 @@ document.addEventListener('DOMContentLoaded', function () {
             formData += `Dodávka odpovídá dokumentům: ${currentDocument.deliveryMatch || ''}\n`;
             formData += `Dokumenty dodávky: ${(currentDocument.documents || []).join(', ')}\n`;
             formData += `Poznámka: ${currentDocument.note || ''}\n`;
+            // Nové pole Umístění
             formData += `Umístění: ${(currentDocument.location || []).join(', ')}\n`;
             formData += `Kontroloval: ${currentDocument.controlBy || ''}\n`;
             formData += `Datum: ${currentDocument.date || ''}\n`;
             formData += `Výsledek: ${currentDocument.result || ''}\n\n`;
-
+            
             // Formulář ze Strany 3
             formData += `Formulář ze Strany 3\n`;
             formData += `Číslo objednávky: ${currentDocument.orderNumber || ''}\n`;
@@ -49,14 +50,7 @@ document.addEventListener('DOMContentLoaded', function () {
             formData += `Druh zboží: ${(currentDocument.goodsType || []).join(', ')}\n`;
             formData += `Poznámka: ${currentDocument.note || ''}\n`;
             formData += `Vstupní kontrola: ${currentDocument.entryControl || ''}\n\n`;
-
-            // Pět polí Jméno příjemce
-            formData += `Jméno příjemce 1: ${recipientNameInput1.value || 'Neuvedeno'}\n`;
-            formData += `Jméno příjemce 2: ${recipientNameInput2.value || 'Neuvedeno'}\n`;
-            formData += `Jméno příjemce 3: ${recipientNameInput3.value || 'Neuvedeno'}\n`;
-            formData += `Jméno příjemce 4: ${recipientNameInput4.value || 'Neuvedeno'}\n`;
-            formData += `Jméno příjemce 5: ${recipientNameInput5.value || 'Neuvedeno'}\n\n`;
-
+            
             // Formulář ze Strany 4 (pokud existuje)
             if (currentDocument.hasStrana4) {
                 formData += `Formulář ze Strany 4\n`;
@@ -69,41 +63,43 @@ document.addEventListener('DOMContentLoaded', function () {
                 formData += `Datum: ${currentDocument.date || ''}\n`;
                 formData += `Výsledek: ${currentDocument.result || ''}\n\n`;
             }
+            
+            // Přidání jména příjemce – z formuláře Strany 5
+            formData += `Jméno příjemce: ${recipientNameInput.value || 'Neuvedeno'}\n`;
         }
         displayFormsDiv.innerText = formData;
     }
-
-    // Přidáme displayFormsDiv do dokumentu
+    
+    // Přidáme displayFormsDiv do dokumentu (můžeš jej umístit kamkoliv, např. na konec body)
     document.body.appendChild(displayFormsDiv);
     displayFilledForms();
-
-    // Aktualizace zobrazení při změně některého jména příjemce
-    [recipientNameInput1, recipientNameInput2, recipientNameInput3, recipientNameInput4, recipientNameInput5]
-        .forEach(input => {
-            input.addEventListener('input', displayFilledForms);
-        });
-
-    // Při obdržení synchronizovaných dokumentů aktualizujeme currentDocument a předvyplníme pole
-    document.addEventListener('documentsUpdated', function(event) {
+    
+    // Aktualizace zobrazení při změně jména příjemce
+    recipientNameInput.addEventListener('input', function () {
+        displayFilledForms();
+    });
+    
+    // Při obdržení synchronizovaných dokumentů aktualizujeme currentDocument
+    document.addEventListener('documentsUpdated', function (event) {
         documents = event.detail;
         if (docIndex !== null && documents[docIndex]) {
             currentDocument = documents[docIndex];
             if (currentDocument.number) {
                 orderNumberInput.value = currentDocument.number;
             }
-            // Předvyplnění pěti polí Jméno příjemce, pokud existují
-            if (currentDocument.recipientName1) recipientNameInput1.value = currentDocument.recipientName1;
-            if (currentDocument.recipientName2) recipientNameInput2.value = currentDocument.recipientName2;
-            if (currentDocument.recipientName3) recipientNameInput3.value = currentDocument.recipientName3;
-            if (currentDocument.recipientName4) recipientNameInput4.value = currentDocument.recipientName4;
-            if (currentDocument.recipientName5) recipientNameInput5.value = currentDocument.recipientName5;
+            // Předvyplnění jména příjemce, pokud existuje
+            if (currentDocument.recipientName) {
+                recipientNameInput.value = currentDocument.recipientName;
+            }
             displayFilledForms();
         }
     });
+    
+    // Po navázání spojení požádáme server o aktuální dokumenty
     socket.emit('requestDocuments');
-
-    // Obsluha tlačítka "Potvrdit" – generování ZIP a uložení pěti polí Jméno příjemce
-    confirmButton.addEventListener('click', function(event) {
+    
+    // Obsluha tlačítka "Potvrdit" – před generováním ZIP souboru
+    confirmButton.addEventListener('click', function (event) {
         event.preventDefault();
         if (!currentDocument) {
             alert('Chyba: Žádná data k exportu.');
@@ -114,26 +110,28 @@ document.addEventListener('DOMContentLoaded', function () {
             alert('Chyba: Číslo objednávky není vyplněno.');
             return;
         }
-
-        // Uložení pěti polí Jméno příjemce do aktuálního dokumentu
-        currentDocument.recipientName1 = recipientNameInput1.value || 'Neuvedeno';
-        currentDocument.recipientName2 = recipientNameInput2.value || 'Neuvedeno';
-        currentDocument.recipientName3 = recipientNameInput3.value || 'Neuvedeno';
-        currentDocument.recipientName4 = recipientNameInput4.value || 'Neuvedeno';
-        currentDocument.recipientName5 = recipientNameInput5.value || 'Neuvedeno';
-
-        // Generování textu pro PDF z displayFormsDiv
+    
+        // Uložíme jméno příjemce z pole do aktuálního dokumentu
+        currentDocument.recipientName = recipientNameInput.value || 'Neuvedeno';
+    
+        // Připravíme text se souhrnem vyplněných formulářů
         const filledData = displayFormsDiv.innerText;
-
+    
+        // Nepřidáváme žádné přílohy, protože soubory se ukládají do Dropboxu
+        const attachments = [];
+    
         const payload = {
             filledData: filledData,
-            attachments: [],
+            attachments: attachments,
             orderNumber: orderNumber
         };
-
+    
+        // Odeslání POST požadavku na /generateZip pro vygenerování ZIP souboru
         fetch('/generateZip', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json'
+            },
             body: JSON.stringify(payload)
         })
         .then(response => {
@@ -143,7 +141,7 @@ document.addEventListener('DOMContentLoaded', function () {
             return response.blob();
         })
         .then(blob => {
-            // Stažení ZIP souboru
+            // Vytvoříme dočasný odkaz pro stažení ZIP souboru
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
@@ -152,8 +150,8 @@ document.addEventListener('DOMContentLoaded', function () {
             a.click();
             a.remove();
             window.URL.revokeObjectURL(url);
-
-            // Nastavíme barvu na šedou a odešleme aktualizaci
+            
+            // Nastavíme barvu aktuálního dokumentu na šedou
             if (currentDocument) {
                 currentDocument.borderColor = 'gray';
                 if (docIndex !== null) {
@@ -161,6 +159,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
                 socket.emit('updateDocuments', documents);
             }
+            // Přesměrujeme uživatele zpět na Strana1
             window.location.href = 'Strana1.html';
         })
         .catch(error => {
@@ -168,22 +167,9 @@ document.addEventListener('DOMContentLoaded', function () {
             alert('Chyba při generování ZIP souboru: ' + error.message);
         });
     });
-
-    // Obsluha tlačítka "Konec" – návrat na Strana1, ale zachování pěti polí Jméno příjemce
-    endButton.addEventListener('click', function() {
-        // Uložení pěti polí Jméno příjemce
-        currentDocument.recipientName1 = recipientNameInput1.value;
-        currentDocument.recipientName2 = recipientNameInput2.value;
-        currentDocument.recipientName3 = recipientNameInput3.value;
-        currentDocument.recipientName4 = recipientNameInput4.value;
-        currentDocument.recipientName5 = recipientNameInput5.value;
-        // Označení dokumentu jako draft
-        currentDocument.draftStrana3 = true;
-
-        if (docIndex !== null) {
-            documents[docIndex] = currentDocument;
-            socket.emit('updateDocuments', documents);
-        }
+    
+    // Obsluha tlačítka "Konec" – přesměruje zpět na Strana1
+    endButton.addEventListener('click', function () {
         window.location.href = 'Strana1.html';
     });
 });
