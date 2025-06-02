@@ -1,4 +1,4 @@
-// Script3.js - upraveno pro podporu 5× polí Jméno příjemce a jejich uchování při „Konec“
+// Script3.js - upraveno pro uložení rozpracovaných dat při stisku „Konec“ a zobrazení resume (X) na Strana1
 document.addEventListener('DOMContentLoaded', function() {
     const socket = window.socket || io();
     const urlParams = new URLSearchParams(window.location.search);
@@ -6,10 +6,10 @@ document.addEventListener('DOMContentLoaded', function() {
     let documents = [];
     let currentDocument = {};
 
-    const saveButton   = document.getElementById('saveBtn');
-    const endButton    = document.getElementById('endBtn');
-    const fileUpload   = document.getElementById('fileUpload');
-    const fileList     = document.getElementById('fileList');
+    const saveButton = document.getElementById('saveBtn');
+    const endButton = document.getElementById('endBtn');
+    const fileUpload = document.getElementById('fileUpload');
+    const fileList = document.getElementById('fileList');
     const form2Container = document.getElementById('form2Container');
 
     // Načtení dat do formuláře
@@ -17,56 +17,10 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!currentDocument) return;
         form2Container.innerHTML = `
             <div class="form-group">
-                <label for="documentNumber"><strong>Číslo dokumentu</strong></label>
+                <h2>Číslo dokumentu</h2>
                 <input type="text" id="documentNumber" name="documentNumber" value="${currentDocument.number || ''}" readonly>
             </div>
-            <div class="form-group">
-                <label for="supplier"><strong>Dodavatel</strong></label>
-                <input type="text" id="supplier" name="supplier" value="${currentDocument.supplier || ''}">
-            </div>
-            <div class="form-group">
-                <label><strong>Stav balení</strong></label>
-                <label><input type="radio" name="packagingStatus" value="1" ${currentDocument.packagingStatus === '1' ? 'checked' : ''}> 1</label>
-                <label><input type="radio" name="packagingStatus" value="2" ${currentDocument.packagingStatus === '2' ? 'checked' : ''}> 2</label>
-            </div>
-            <div class="form-group">
-                <label><strong>Označení balení</strong></label>
-                <label><input type="radio" name="packageLabel" value="1" ${currentDocument.packageLabel === '1' ? 'checked' : ''}> 1</label>
-                <label><input type="radio" name="packageLabel" value="2" ${currentDocument.packageLabel === '2' ? 'checked' : ''}> 2</label>
-            </div>
-            <div class="form-group">
-                <label><strong>Dodávka odpovídá dokumentům</strong></label>
-                <label><input type="radio" name="deliveryMatch" value="1" ${currentDocument.deliveryMatch === '1' ? 'checked' : ''}> 1</label>
-                <label><input type="radio" name="deliveryMatch" value="2" ${currentDocument.deliveryMatch === '2' ? 'checked' : ''}> 2</label>
-            </div>
-            <div class="form-group">
-                <label><strong>Dokumenty dodávky</strong></label>
-                <label><input type="checkbox" name="documents" value="Dodací list" ${currentDocument.documents && currentDocument.documents.includes('Dodací list') ? 'checked' : ''}> Dodací list</label>
-                <label><input type="checkbox" name="documents" value="Materiálové listy" ${currentDocument.documents && currentDocument.documents.includes('Materiálové listy') ? 'checked' : ''}> Materiálové listy</label>
-                <label><input type="checkbox" name="documents" value="Faktura" ${currentDocument.documents && currentDocument.documents.includes('Faktura') ? 'checked' : ''}> Faktura</label>
-                <label><input type="checkbox" name="documents" value="Certifikáty/Návody" ${currentDocument.documents && currentDocument.documents.includes('Certifikáty/Návody') ? 'checked' : ''}> Certifikáty/Návody</label>
-                <label><input type="checkbox" name="documents" value="Jiné" ${currentDocument.documents && currentDocument.documents.includes('Jiné') ? 'checked' : ''}> Jiné</label>
-            </div>
-            <div class="form-group">
-                <label><strong>Poznámka - uvést jestli Příjem 1 nebo Příjem 2</strong></label>
-                <textarea id="note" name="note">${currentDocument.note || ''}</textarea>
-            </div>
-            <div class="form-group">
-                <label><strong>Umístění</strong></label>
-                <label><input type="checkbox" name="location" value="Příjem 1" ${(currentDocument.location && currentDocument.location.includes('Příjem 1')) ? 'checked' : ''}> Příjem 1</label>
-                <label><input type="checkbox" name="location" value="Příjem 2" ${(currentDocument.location && currentDocument.location.includes('Příjem 2')) ? 'checked' : ''}> Příjem 2</label>
-                <label><input type="checkbox" name="location" value="Jiné" ${(currentDocument.location && currentDocument.location.includes('Jiné')) ? 'checked' : ''}> Jiné</label>
-            </div>
-            <div class="form-group">
-                <label><strong>Vstupní kontrolu provedl</strong></label>
-                <input type="text" id="controlBy" name="controlBy" value="${currentDocument.controlBy || ''}">
-            </div>
-            <div class="form-group">
-                <label><strong>Datum</strong></label>
-                <input type="date" id="date" name="date" value="${currentDocument.date || ''}">
-            </div>
         `;
-        // Předvyplnění polí Strana3
         document.getElementById('orderNumber').value = currentDocument.orderNumber || '';
         document.getElementById('supplier').value = currentDocument.supplier || '';
         document.getElementById('confirmedDeliveryDate').value = currentDocument.confirmedDeliveryDate || '';
@@ -95,12 +49,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const ec = document.querySelector(`input[name="entryControl"][value="${currentDocument.entryControl}"]`);
             if (ec) ec.checked = true;
         }
-        // Předvyplnění 5× pole Jméno příjemce
-        document.getElementById('recipientName').value  = currentDocument.recipientName  || '';
-        document.getElementById('recipientName2').value = currentDocument.recipientName2 || '';
-        document.getElementById('recipientName3').value = currentDocument.recipientName3 || '';
-        document.getElementById('recipientName4').value = currentDocument.recipientName4 || '';
-        document.getElementById('recipientName5').value = currentDocument.recipientName5 || '';
 
         // Zobrazení uložených souborů
         fileList.innerHTML = '';
@@ -122,7 +70,7 @@ document.addEventListener('DOMContentLoaded', function() {
         fileList.appendChild(fileItem);
     }
 
-    // Upload souborů
+    // Upload souborů (stejně jako dříve)
     fileUpload.addEventListener('change', function(event) {
         const files = Array.from(event.target.files);
         const documentNumber = document.getElementById('documentNumber').value;
@@ -169,7 +117,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Uložení formuláře (Hotovo) + odstranění draft flagu
     saveButton.addEventListener('click', function(event) {
         event.preventDefault();
-        const entryControlValue = document.querySelector('input[name="entryControl"]:checked')?.value;
+        var entryControlValue = document.querySelector('input[name="entryControl"]:checked')?.value;
         if (!entryControlValue) {
             alert("Vyberte prosím možnost pod 'Vstupní kontrola'");
             return;
@@ -180,11 +128,7 @@ document.addEventListener('DOMContentLoaded', function() {
         currentDocument.confirmedDeliveryDate = document.getElementById('confirmedDeliveryDate').value;
         currentDocument.deliveryDate = document.getElementById('deliveryDate').value;
         currentDocument.price = document.getElementById('price').value;
-        currentDocument.recipientName  = document.getElementById('recipientName').value;
-        currentDocument.recipientName2 = document.getElementById('recipientName2').value;
-        currentDocument.recipientName3 = document.getElementById('recipientName3').value;
-        currentDocument.recipientName4 = document.getElementById('recipientName4').value;
-        currentDocument.recipientName5 = document.getElementById('recipientName5').value;
+        currentDocument.recipientName = document.getElementById('recipientName').value;
         currentDocument.timeliness = document.querySelector('input[name="timeliness"]:checked')?.value;
         currentDocument.systemCheck = document.querySelector('input[name="systemCheck"]:checked')?.value;
         currentDocument.communication = document.querySelector('input[name="communication"]:checked')?.value;
@@ -199,6 +143,7 @@ document.addEventListener('DOMContentLoaded', function() {
             currentDocument.borderColor = 'green';
             currentDocument.hasStrana4 = true;
         }
+
         // Draft flag zrušíme
         currentDocument.draftStrana3 = false;
 
@@ -209,7 +154,7 @@ document.addEventListener('DOMContentLoaded', function() {
         window.location.href = 'Strana1.html';
     });
 
-    // Uložení draftu a návrat na Strana1 (změní se draft flag, barva zůstává stejná)
+    // Uložení draftu a návrat na Strana1 (změní se pouze draft flag, barva zůstává stejná)
     endButton.addEventListener('click', function() {
         currentDocument.orderNumber = document.getElementById('orderNumber').value;
         currentDocument.supplier = document.getElementById('supplier').value;
@@ -227,13 +172,6 @@ document.addEventListener('DOMContentLoaded', function() {
         currentDocument.note = document.getElementById('note').value;
         const entryControl = document.querySelector('input[name="entryControl"]:checked')?.value;
         if (entryControl) currentDocument.entryControl = entryControl;
-
-        // 5× pole Jméno příjemce (draft)
-        currentDocument.recipientName  = document.getElementById('recipientName').value;
-        currentDocument.recipientName2 = document.getElementById('recipientName2').value;
-        currentDocument.recipientName3 = document.getElementById('recipientName3').value;
-        currentDocument.recipientName4 = document.getElementById('recipientName4').value;
-        currentDocument.recipientName5 = document.getElementById('recipientName5').value;
 
         // Označíme dokument jako draft
         currentDocument.draftStrana3 = true;
