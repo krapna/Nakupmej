@@ -1,4 +1,4 @@
-// Script1.js – kompletní přepis včetně zobrazení neklikacích tlačítek pro dodavatele, příjemce a umístění
+// Script1.js – kompletní přepis včetně úpravy stylu disabled tlačítek pro dodavatele, příjemce a umístění
 document.addEventListener('DOMContentLoaded', function() {
     var socket = window.socket || io();
     var goToStrana2Button = document.getElementById('goToStrana2');
@@ -134,6 +134,9 @@ document.addEventListener('DOMContentLoaded', function() {
             supplierBtn.textContent = doc.supplier || '';
             supplierBtn.disabled = true;
             supplierBtn.style.cursor = 'default';
+            supplierBtn.style.backgroundColor = 'gray';
+            supplierBtn.style.color = 'white';
+            supplierBtn.style.border = 'none';
             orderDiv.appendChild(supplierBtn);
 
             // 2) Příjemce (z Strana2,5 nebo Strana3)
@@ -141,6 +144,9 @@ document.addEventListener('DOMContentLoaded', function() {
             recipientBtn.textContent = doc.recipientName || '';
             recipientBtn.disabled = true;
             recipientBtn.style.cursor = 'default';
+            recipientBtn.style.backgroundColor = 'gray';
+            recipientBtn.style.color = 'white';
+            recipientBtn.style.border = 'none';
             orderDiv.appendChild(recipientBtn);
 
             // 3) Umístění (z políčka Strana2)
@@ -152,6 +158,9 @@ document.addEventListener('DOMContentLoaded', function() {
             locationBtn.textContent = locationText;
             locationBtn.disabled = true;
             locationBtn.style.cursor = 'default';
+            locationBtn.style.backgroundColor = 'gray';
+            locationBtn.style.color = 'white';
+            locationBtn.style.border = 'none';
             orderDiv.appendChild(locationBtn);
 
             ordersDiv.appendChild(orderDiv);
