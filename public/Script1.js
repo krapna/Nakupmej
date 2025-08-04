@@ -1,4 +1,4 @@
-// Script1.js - aktualizováno pro podporu zobrazení tlačítka „Sklad“ mezi Strana2 a Strana3
+// Script1.js – kompletní přepis včetně zobrazení neklikacích tlačítek pro dodavatele, příjemce a umístění
 document.addEventListener('DOMContentLoaded', function() {
     var socket = window.socket || io();
     var goToStrana2Button = document.getElementById('goToStrana2');
@@ -127,17 +127,32 @@ document.addEventListener('DOMContentLoaded', function() {
                 orderDiv.appendChild(resumeBtn);
             }
 
-            // Zobrazení dodavatele jako neinteraktivní tlačítko
-            if ((doc.borderColor === 'gray' || doc.borderColor === 'green') && doc.supplier) {
-                var supplierBtn = document.createElement('button');
-                supplierBtn.textContent = doc.supplier;
-                supplierBtn.style.backgroundColor = 'gray';
-                supplierBtn.style.color = 'white';
-                supplierBtn.style.border = 'none';
-                supplierBtn.style.cursor = 'default';
-                supplierBtn.disabled = true;
-                orderDiv.appendChild(supplierBtn);
+            // ---- Nově: Tlačítka se statickými texty (disabled) ----
+
+            // 1) Dodavatel
+            var supplierBtn = document.createElement('button');
+            supplierBtn.textContent = doc.supplier || '';
+            supplierBtn.disabled = true;
+            supplierBtn.style.cursor = 'default';
+            orderDiv.appendChild(supplierBtn);
+
+            // 2) Příjemce (z Strana2,5 nebo Strana3)
+            var recipientBtn = document.createElement('button');
+            recipientBtn.textContent = doc.recipientName || '';
+            recipientBtn.disabled = true;
+            recipientBtn.style.cursor = 'default';
+            orderDiv.appendChild(recipientBtn);
+
+            // 3) Umístění (z políčka Strana2)
+            var locationText = '';
+            if (Array.isArray(doc.location)) {
+                locationText = doc.location.join(', ');
             }
+            var locationBtn = document.createElement('button');
+            locationBtn.textContent = locationText;
+            locationBtn.disabled = true;
+            locationBtn.style.cursor = 'default';
+            orderDiv.appendChild(locationBtn);
 
             ordersDiv.appendChild(orderDiv);
         });
