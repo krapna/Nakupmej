@@ -1,4 +1,4 @@
-// Script1.js - aktualizováno pro podporu zobrazení tlačítka „resume (X)“ pro rozpracované Strana3 dokumenty
+// Script1.js - aktualizováno pro podporu zobrazení tlačítka „Sklad“ mezi Strana2 a Strana3
 document.addEventListener('DOMContentLoaded', function() {
     var socket = window.socket || io();
     var goToStrana2Button = document.getElementById('goToStrana2');
@@ -18,10 +18,12 @@ document.addEventListener('DOMContentLoaded', function() {
         loadOrders();
     });
 
+    // Přechod na Strana2 pro nový příjem
     goToStrana2Button.addEventListener('click', function() {
         window.location.href = 'Strana2.html';
     });
 
+    // Filtrování záznamů podle čísla
     searchButton.addEventListener('click', function() {
         var searchValue = packageNumberInput.value.toLowerCase();
         var orders = document.querySelectorAll('.order');
@@ -31,34 +33,27 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
+    // Funkce pro vykreslení seznamu objednávek/dokumentů
     function loadOrders() {
-        ordersDiv.innerHTML = ''; // Vyčistíme předchozí zobrazení
-
-        // Seřazení dokumentů podle barvy: zelené → oranžové → modré → šedé
-        var colorOrder = { 'green': 1, 'orange': 2, 'blue': 3, 'gray': 4 };
+        ordersDiv.innerHTML = '';
+        var colorOrder = { green: 1, orange: 2, blue: 3, gray: 4, purple: 5 };
         var sorted = documents
-            .map(function(doc, index) { return { doc: doc, index: index }; })
+            .map(function(doc, i) { return { doc: doc, index: i }; })
             .sort(function(a, b) {
-                var colorA = a.doc.borderColor || 'blue';
-                var colorB = b.doc.borderColor || 'blue';
-                var rankA = colorOrder[colorA] || 5;
-                var rankB = colorOrder[colorB] || 5;
-                if (rankA !== rankB) return rankA - rankB;
-                return a.index - b.index;
+                var rA = colorOrder[a.doc.borderColor] || colorOrder.blue;
+                var rB = colorOrder[b.doc.borderColor] || colorOrder.blue;
+                return rA - rB;
             });
 
-        // Vykreslení ve správném pořadí
         sorted.forEach(function(item) {
-            var doc = item.doc;
-            var index = item.index;
-
+            var doc = item.doc, index = item.index;
             var orderDiv = document.createElement('div');
             orderDiv.className = 'order';
             orderDiv.textContent = 'Dokument: ' + doc.number;
             orderDiv.style.borderColor = doc.borderColor || 'blue';
             orderDiv.style.backgroundColor = doc.borderColor || 'blue';
 
-            // Tlačítko "Zobrazit"
+            // Zobrazit detail (Strana2)
             var viewBtn = document.createElement('button');
             viewBtn.textContent = 'Zobrazit';
             viewBtn.addEventListener('click', function() {
@@ -66,46 +61,59 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             orderDiv.appendChild(viewBtn);
 
-            // Další krok (Nákup / Kvalita / K předání)
+            // Další krok: Sklad / Nákup / Kvalita / K předání
             if (doc.hasStrana4) {
                 if (doc.borderColor === 'orange') {
-                    var openBtn = document.createElement('button');
-                    openBtn.textContent = 'Kvalita';
-                    openBtn.style.backgroundColor = 'red';
-                    openBtn.addEventListener('click', function() {
+                    var kvalitaBtn = document.createElement('button');
+                    kvalitaBtn.textContent = 'Kvalita';
+                    kvalitaBtn.style.backgroundColor = 'red';
+                    kvalitaBtn.addEventListener('click', function() {
                         window.location.href = 'Strana4.html?docIndex=' + index;
                     });
-                    orderDiv.appendChild(openBtn);
+                    orderDiv.appendChild(kvalitaBtn);
                 } else if (doc.borderColor === 'green') {
-                    var openBtn = document.createElement('button');
-                    openBtn.textContent = 'K předání';
-                    openBtn.style.backgroundColor = '#28a745';
-                    openBtn.addEventListener('click', function() {
+                    var predaniBtn = document.createElement('button');
+                    predaniBtn.textContent = 'K předání';
+                    predaniBtn.style.backgroundColor = '#28a745';
+                    predaniBtn.addEventListener('click', function() {
                         window.location.href = 'Strana5.html?docIndex=' + index;
                     });
-                    orderDiv.appendChild(openBtn);
+                    orderDiv.appendChild(predaniBtn);
                 }
             } else {
-                var openBtn = document.createElement('button');
-                openBtn.textContent = 'Nákup';
-                openBtn.addEventListener('click', function() {
-                    window.location.href = 'Strana3.html?docIndex=' + index;
-                });
-                orderDiv.appendChild(openBtn);
+                // Pokud Strana2 je vyplněná, ale Strana2,5 ještě ne
+                if (doc.stage2Completed && !doc.stage25Completed) {
+                    var skladBtn = document.createElement('button');
+                    skladBtn.textContent = 'Sklad';
+                    skladBtn.style.backgroundColor = 'purple';
+                    skladBtn.style.color = 'white';
+                    skladBtn.addEventListener('click', function() {
+                        window.location.href = 'Strana2,5.html?docIndex=' + index;
+                    });
+                    orderDiv.appendChild(skladBtn);
+                } else {
+                    // Jinak klasický Nákup (Strana3)
+                    var nakupBtn = document.createElement('button');
+                    nakupBtn.textContent = 'Nákup';
+                    nakupBtn.addEventListener('click', function() {
+                        window.location.href = 'Strana3.html?docIndex=' + index;
+                    });
+                    orderDiv.appendChild(nakupBtn);
+                }
             }
 
-            // Tlačítko "Odstranit"
+            // Odstranit dokument
             var deleteBtn = document.createElement('button');
             deleteBtn.textContent = 'Odstranit';
             deleteBtn.addEventListener('click', function() {
-                if (confirm("Opravdu chcete odstranit tento dokument?")) {
+                if (confirm('Opravdu chcete odstranit tento dokument?')) {
                     documents.splice(index, 1);
                     socket.emit('updateDocuments', documents);
                 }
             });
             orderDiv.appendChild(deleteBtn);
 
-            // Tlačítko "Resume" (X) pro rozpracované Strana3
+            // Resume (X) pro nedokončenou Strana3
             if (doc.draftStrana3) {
                 var resumeBtn = document.createElement('button');
                 resumeBtn.textContent = 'X';
@@ -119,31 +127,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 orderDiv.appendChild(resumeBtn);
             }
 
-            // Jméno příjemce
-            if ((doc.borderColor === 'gray' || doc.borderColor === 'green') && doc.recipientName) {
-                var recipientBtn = document.createElement('button');
-                recipientBtn.textContent = doc.recipientName;
-                recipientBtn.style.backgroundColor = 'gray';
-                recipientBtn.style.color = 'white';
-                recipientBtn.style.border = 'none';
-                recipientBtn.style.cursor = 'default';
-                recipientBtn.disabled = true;
-                orderDiv.appendChild(recipientBtn);
-            }
-
-            // Umístění
-            if ((doc.borderColor === 'gray' || doc.borderColor === 'green') && Array.isArray(doc.location) && doc.location.length) {
-                var locationBtn = document.createElement('button');
-                locationBtn.textContent = doc.location.join(', ');
-                locationBtn.style.backgroundColor = 'gray';
-                locationBtn.style.color = 'white';
-                locationBtn.style.border = 'none';
-                locationBtn.style.cursor = 'default';
-                locationBtn.disabled = true;
-                orderDiv.appendChild(locationBtn);
-            }
-
-            // Dodavatel
+            // Zobrazení dodavatele jako neinteraktivní tlačítko
             if ((doc.borderColor === 'gray' || doc.borderColor === 'green') && doc.supplier) {
                 var supplierBtn = document.createElement('button');
                 supplierBtn.textContent = doc.supplier;

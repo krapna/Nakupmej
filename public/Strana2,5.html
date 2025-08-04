@@ -1,0 +1,38 @@
+<!-- Strana2,5.html -->
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Strana 2,5 – Sklad</title>
+    <link rel="stylesheet" href="Styly2,5.css">
+</head>
+<body>
+    <div class="container">
+        <form id="skladForm">
+            <div class="form-group">
+                <label for="orderNumber">Číslo objednávky</label>
+                <input type="text" id="orderNumber" name="orderNumber" readonly>
+            </div>
+            <div class="form-group">
+                <label for="recipientName">Jméno příjemce</label>
+                <input type="text" id="recipientName" name="recipientName">
+            </div>
+            <div class="form-group">
+                <label>Vstupní kontrola</label>
+                <div>
+                    <label><input type="radio" name="entryControl" value="Ano"> Ano</label>
+                    <label><input type="radio" name="entryControl" value="Ne"> Ne</label>
+                </div>
+            </div>
+            <div class="buttons">
+                <button type="button" id="endBtn">Konec</button>
+                <button type="submit" id="saveBtn">Hotovo</button>
+            </div>
+        </form>
+    </div>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="onlineserv.js"></script>
+    <script src="Script2,5.js"></script>
+</body>
+</html>
