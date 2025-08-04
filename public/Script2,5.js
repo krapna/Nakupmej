@@ -11,8 +11,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function loadFormData() {
         if (!currentDocument) return;
-        document.getElementById('orderNumber').value   = currentDocument.number || '';
-        document.getElementById('recipientName').value = currentDocument.recipientName || '';
+        document.getElementById('documentNumber').value   = currentDocument.number || '';
+        document.getElementById('orderNumber').value      = currentDocument.orderNumber || '';
+        document.getElementById('recipientName').value    = currentDocument.recipientName || '';
         if (currentDocument.entryControl) {
             const ec = document.querySelector(
               `input[name="entryControl"][value="${currentDocument.entryControl}"]`
@@ -32,6 +33,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     saveBtn.addEventListener('click', function(event) {
         event.preventDefault();
+        currentDocument.number         = document.getElementById('documentNumber').value;
         currentDocument.orderNumber    = document.getElementById('orderNumber').value;
         currentDocument.recipientName  = document.getElementById('recipientName').value;
         const entryControlValue        = document.querySelector('input[name="entryControl"]:checked')?.value;
