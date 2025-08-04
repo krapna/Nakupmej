@@ -13,6 +13,8 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!currentDocument) return;
         document.getElementById('documentNumber').value   = currentDocument.number || '';
         document.getElementById('orderNumber').value      = currentDocument.orderNumber || '';
+        document.getElementById('supplier').value         = currentDocument.supplier || '';
+        document.getElementById('note').value             = currentDocument.note || '';
         document.getElementById('recipientName').value    = currentDocument.recipientName || '';
         if (currentDocument.entryControl) {
             const ec = document.querySelector(
@@ -33,8 +35,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
     saveBtn.addEventListener('click', function(event) {
         event.preventDefault();
+        // Přepis polí zpět do objektu
         currentDocument.number         = document.getElementById('documentNumber').value;
         currentDocument.orderNumber    = document.getElementById('orderNumber').value;
+        currentDocument.supplier       = document.getElementById('supplier').value;
+        currentDocument.note           = document.getElementById('note').value;
         currentDocument.recipientName  = document.getElementById('recipientName').value;
         const entryControlValue        = document.querySelector('input[name="entryControl"]:checked')?.value;
         if (entryControlValue) {
