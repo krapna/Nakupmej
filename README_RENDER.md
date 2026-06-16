@@ -22,3 +22,6 @@ Files changed:
 - server.js
 - package.json
 - assets/*
+
+
+Update: Added Development Partner Opportunity section, professional milestone timeline, partnership CTAs, NDA note and updated contact text.

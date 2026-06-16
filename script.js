@@ -25,7 +25,7 @@ function updateScrollUi() {
     progress.style.width = scrollable > 0 ? `${(window.scrollY / scrollable) * 100}%` : '0%';
   }
 
-  const sections = ['project', 'process', 'impact', 'team', 'contact'];
+  const sections = ['project', 'process', 'impact', 'partnership', 'team', 'contact'];
   let current = '';
   sections.forEach(id => {
     const el = document.getElementById(id);
@@ -110,7 +110,7 @@ form?.addEventListener('submit', event => {
   const data = new FormData(form);
   const topic = data.get('topic');
 
-  const subject = encodeURIComponent(isCzech ? `ZK Nextgen Power – ${topic}` : `ZK Nextgen Power inquiry – ${topic}`);
+  const subject = encodeURIComponent(isCzech ? `ZK nextgen energy – ${topic}` : `ZK nextgen energy inquiry – ${topic}`);
   const bodyText = isCzech
     ? `Jméno: ${data.get('name')}\nE-mail: ${data.get('email')}\nTéma: ${topic}\n\nZpráva:\n${data.get('message')}`
     : `Name: ${data.get('name')}\nEmail: ${data.get('email')}\nTopic: ${topic}\n\nMessage:\n${data.get('message')}`;
