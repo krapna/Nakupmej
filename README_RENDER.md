@@ -25,3 +25,9 @@ Files changed:
 
 
 Update: Added Development Partner Opportunity section, professional milestone timeline, partnership CTAs, NDA note and updated contact text.
+
+
+Latest update:
+- Added Ondřej Pokorný as Sales representative.
+- Replaced Daniel Provazník photo with assets/DAN.webp.
+- Added broader development focus cards: biomethane in Africa and pyrolysis in Africa / Asia.
